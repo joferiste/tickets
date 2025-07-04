@@ -1,0 +1,63 @@
+{% extends "core/base.html" %}
+{% load custom_filters %}
+
+{% load static %}
+
+{% block title  %} Home {% endblock %}
+
+{% block content %}
+
+<!-- Contenido Principal -->
+<div class="main-content">
+
+    <div class="locales-mapa">
+        {% for i in "12345678" %}
+            {% with local=locales|get_local:i %}
+                <div class="local local-{{ i }} {% if local %}{{ local.estado.nombre|lower }}{% else %}Disponible{% endif %}">
+                    <span class="badge-position">{{ i }}</span>
+                    {% if local %}
+                        {{ local.nombre }}
+                    {% else %}
+                        Local {{ i }}
+                    {% endif %}
+                    <div class="tooltip">
+                        {% if local %}
+                            <strong>
+                                {{ local.nombre|default:"Local sin nombre" }} (Posición {{ i }})
+                            </strong>
+                            {% with ocupacion=ocupaciones|get_ocupacion:local.idLocal %}
+                                {% if ocupacion %}
+                                    <strong>Negocio</strong> {{ ocupacion.negocio.nombre }}<br>
+                                    <strong>Cliente</strong> {{ ocupacion.negocio.usuario }}<br>
+                                    <strong>Inicio</strong> {{ ocupacion.fecha_inicio|date:"d/m/Y" }}<br>
+                                {% else %}
+                                    <br><br>
+                                {% endif %}
+                            {% endwith %}
+                            <strong>Nivel</strong> {{ local.nivel }}<br>
+                            <strong>Estado</strong> {{ local.estado }}<br>
+                        {% else %}
+                            <strong>Local {{ i }} (No asignado)</strong> 
+                        {% endif %}
+                    </div>
+                </div>
+            {% endwith %}
+        {% endfor %}
+    </div>
+    <!-- Panel derecho: Negocios creados -->
+    <div class="right-panel">
+        <h3> Negocios </h3>
+        <div class="business-item">
+            {% for negocio in negocios %}
+                <div class="business-name">
+                    <div class="only-name"> {{ negocio.nombre }} </div>
+                    <div class="responsably-name"> {{ negocio.usuario.nombre }} </div>
+                </div>
+            {% empty %}
+                <p> No hay negocios registrados.</p>
+            {% endfor %}
+        </div>        
+    </div>
+</div>
+
+{% endblock %}

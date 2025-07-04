@@ -1,0 +1,100 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %} Visualización de Negocios {% endblock %}
+{% block page_title %} Visualización de Negocio {% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'negocios/css/design_update.css' %}">
+<script src="{% static 'negocios/js/scriptsUpdate.js' %}"> </script>
+<div id="alert-container" class="alert-container hidden"></div>
+
+<div class="main-content">
+        <div class="visualizacion_negocios">
+            <div class="retocar_titulo"> 
+                <h1 class="title-centre"> Visualización de Negocios </h1>
+                <!-- Formulario de busqueda -->
+                <form method="POST" class="form-busqueda">
+                    {% csrf_token %}
+                    {{ form.q }}
+                    <button type="submit" class="btn-buscar"> Buscar </button>
+                </form>
+            </div> 
+            <!-- Resultados -->
+            <div class="resultados">
+                {% if negocios %}
+                    <table class="tabla-negocios">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Teléfono 1</th>
+                                <th>Teléfono 2</th>
+                                <th>Correo Electrónico</th>
+                                <th>NIT</th>
+                                <th>Estado</th>
+                                <th>Categoría</th>
+                                <th>Usuario</th>
+                                <th>Fecha de Ingreso al Sistema</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for negocio in negocios %}
+                            <tr id="negocio-{{ negocio.idNegocio }}">
+                                <td class="nombre"> {{ negocio.nombre }}</td>
+                                <td class="descripcion"> {{ negocio.descripcion }}</td>
+                                <td class="telefono1"> {{ negocio.telefono1 }}</td>
+                                <td class="telefono2"> {{ negocio.telefono2|default_if_none:"---" }}</td>
+                                <td class="email"> {{ negocio.email|default_if_none:"---" }}</td>
+                                <td class="nit"> {{ negocio.nit|default_if_none:"---" }}</td>
+                                <td class="estado"> {{ negocio.estado }}</td>
+                                <td class="categoria"> {{ negocio.categoria }}</td>
+                                <td class="usuario"> {{ negocio.usuario.nombre }}</td>
+                                <td class="fechaCreacion"> {{ negocio.fechaCreacion }}</td>   
+                                <td>
+                                    <button class="btns-actions" title="Editar" onclick="openEditModalNegocio({{ negocio.idNegocio }},  
+                                                                                                            '{{ negocio.nombre|escapejs }}', 
+                                                                                                            '{{ negocio.descripcion|escapejs }}', 
+                                                                                                            '{{ negocio.telefono1|escapejs }}', 
+                                                                                                            '{{ negocio.telefono2|escapejs }}', 
+                                                                                                            '{{ negocio.nit|escapejs }}', 
+                                                                                                            '{{ negocio.email|escapejs }}', 
+                                                                                                            '{{ negocio.categoria.idCategoria|escapejs }}', 
+                                                                                                            '{{ negocio.usuario.idUsuario|escapejs }}', 
+                                                                                                            {{ negocio.estado.idEstadoNegocio }})">✏️</button>
+                                    <button class="btns-actions" title="Eliminar" onclick="openDeleteModal({{ negocio.idNegocio }}, '{{ negocio.nombre }}')">🗑️</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p> No se encontraron negocios </p>
+                {% endif %}
+            </div>
+        </div>
+
+    <div id="modal" class="modal hidden">
+        <div class="modal-content" id="modal-content">
+            <!-- Aqui se inyecta el form -->
+        </div>
+    </div>
+
+    <!--  Modal Eliminar -->
+    <div id="deleteModal" class="modal hidden">
+        <div class="modal-content-delete">
+            <form method="POST" action="{% url 'negocios:delete_negocio' %}">
+                {% csrf_token %}
+                <input type="hidden" name="id" id="delete_id">
+                <p id="delete_text"></p>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal('deleteModal')" class="btn-animated "> Cancelar </button>
+                    <button type="submit" class="btn-animated cancel"> Eliminar </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}

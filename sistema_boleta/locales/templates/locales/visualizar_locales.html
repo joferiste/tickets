@@ -1,0 +1,86 @@
+{% extends "core/base.html" %}
+
+{% load static %}
+
+{% block title %} Visualización de Locales {% endblock %}
+
+{% block page_title %} Visualización de Local {% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'locales/js/scriptsUpdate.js' %}?v=3"></script>
+{% endblock %}
+
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'locales/css/design_update.css' %}">
+
+<div id="alert-container" class="alert-container hidden"></div>
+
+<div class="main-content">
+
+        <div class="visualizar_locales">
+            <div class="retocar_titulo">
+                <h1 class="title_centre"> Visualización de Locales </h1>
+                <!-- Formulario de busqueda -->
+                <form method="POST" class="form-busqueda">
+                    {% csrf_token %}
+                    {{ form.q }}
+                    <button type="submit" class="btnBuscar"> Buscar </button>
+                </form>
+            </div>
+            <div class='resultados'>
+                {% if locales %}
+                    <table class="tabla-locales">
+                        <thead>
+                            <tr>
+                                <th> Nombre </th>
+                                <th> Posición en el Mapa </th>
+                                <th> Nivel </th>
+                                <th> Estado </th>
+                                <th> Acciones </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for local in locales %}
+                                <tr id="local-{{ local.idLocal }}">
+                                    <td class="nombre"> {{ local.nombre }} </td>
+                                    <td class="posicion"> {{ local.posicionMapa }} </td>
+                                    <td class="nivel"> {{ local.nivel }} </td>
+                                    <td class="estado"> {{ local.estado }} </td>
+                                    <td>
+                                        <button class="btns-actions" title="Editar" onclick="openEditModalLocal({{ local.idLocal }}, '{{ local.nombre|escapejs }}', {{ local.posicionMapa|escapejs }}, '{{ local.nivel|escapejs }}', '{{ local.estado|escapejs }}')">✏️</button>
+                                        <button class="btns-actions" titl="Eliminar" onclick="openDeleteModal({{ local.idLocal }}, '{{ local.nombre|escapejs }}')">🗑️</button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody> 
+                    </table>
+                {% else %}
+                    <p> No se encontraron locales </p>
+                {% endif %}
+            </div>
+        </div>
+
+    <div class="modal hidden" id="modal">
+        <div class="modal-content" id="modal-content">
+            <!-- Aca se cargara el modal -->
+        </div>
+    </div>
+
+    <!--  Modal Eliminar -->
+    <div id="deleteModal" class="modal hidden">
+        <div class="modal-content-delete">
+            <form method="POST" action="{% url 'locales:delete_local' %}">
+                {% csrf_token %}
+                <input type="hidden" name="id" id="delete_id">
+                <p id="delete_text"></p>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal('deleteModal')" class="btn-animated "> Cancelar </button>
+                    <button type="submit" class="btn-animated cancel"> Eliminar </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -2,7 +2,7 @@ from django.db import models
 from django.core.validators import RegexValidator
 from usuarios.models import Usuario
 
-telefono_validator = RegexValidator(r'^\d{8}$ | ^\d{4}-\d{4}$',
+telefono_validator = RegexValidator(r'^(?:\d{8}|\d{4}-\d{4})$',
                                     'Número inválido. Debe contener 8 dígitos o seguir el formato XXXX-XXXX.')
 
 class EstadoNegocio(models.Model):
@@ -32,9 +32,9 @@ class Negocio(models.Model):
     fechaCreacion = models.DateTimeField(auto_now_add=True)
     estado = models.ForeignKey(EstadoNegocio, on_delete=models.PROTECT)
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT)
-    usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT)
+    usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT, null=True, blank=True)
 
-    def __str__(self):
+    def __str__(self): 
         return self.nombre 
     
     class Meta:

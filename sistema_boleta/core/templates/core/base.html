@@ -1,0 +1,91 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %} Home {% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">    
+    <script src="{% static 'core/js/main.js' %}"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="page-title"> {% block page_title %} Dashboard {% endblock %} </div>
+        <div class="admin-info">
+            <div class="notifications">
+                <button class="notif-btn" onclick="toggleNotifications()">
+                    <img src="{% static 'icons/bell.svg' %}" alt="Notificaciones" class="notif-icon" id="notif-icon">
+                    <span class="notif-count" id="notif-count">3</span>
+                </button>
+            
+                <div class="notif-dropdown" id="notif-dropdown">
+                    <div class="notif-item"> Nueva boleta recibida </div>
+                    <div class="notif-item"> Boleta pendiente de validacion </div>
+                    <div class="notif-item"> Boleta aprobada exitosamente </div>
+                </div>
+            </div>
+            <div class="user-status">
+                <span class="user-circle"></span>
+                <span class="username"> Admin </span>
+            </div>
+        </div>
+    </header>
+    <!-- Sidebar izquierda -->
+    <div class="main-container">    
+        {% load static actives %}
+        <aside class="sidebar">
+            <a href="{% url 'home' %}"
+                class="{% active 'home' %}"> Dashboard </a>
+            <a href="#"> Administración </a>
+            <div class="submenu-container">
+                <button class="submenu-toggle" onclick="toggleSubmenu('asignaciones-submenu')">
+                    Asignaciones 
+                </button>
+                <div id="asignaciones-submenu" class="submenu">
+                    <a href="{% url 'usuarios:usuario_negocio' %}"
+                        class="{% active 'usuario_negocio' %}"> Usuarios a Negocios </a>
+
+                </div>
+            </div> 
+            
+            <div class="submenu-container">
+                <button class="submenu-toggle" onclick="toggleSubmenu('creaciones-submenu')">
+                    Creaciones 
+                </button>
+                <div id="creaciones-submenu" class="submenu">
+                    <a href="{% url 'usuarios:create_usuario' %}"
+                        class="{% active 'create_usuario' %}"> ➕ Crear Usuario </a>
+                    <a href="{% url 'negocios:create_negocio' %}"
+                        class="{% active 'create_negocio' %}"> 🏪 Crear Negocio </a>
+                    <a href="{% url 'locales:create_local' %}"
+                        class="{% active 'create_local' %}"> 🏪 Crear Local </a>
+                </div>
+            </div> 
+
+            <div class="submenu-container">
+                <button class="submenu-toggle" onclick="toggleSubmenu('visualizaciones-submenu')">
+                    Visualizaciones
+                </button>
+                <div id="visualizaciones-submenu" class="submenu">
+                    <a href="{% url 'usuarios:visualizar_usuario' %}"
+                        class="{% active 'visualizar_usuario' %}">  Ver Usuario </a>
+                    <a href="{% url 'negocios:visualizar_negocio' %}"
+                        class="{% active 'visualizar_negocio' %}">  Ver Negocio </a>
+                    <a href="{% url 'locales:visualizar_local' %}"
+                        class="{% active 'visualizar_local' %}">  Ver Local </a>
+                </div>
+            </div> 
+            <a href="#"> Configuración </a>
+        </aside>
+
+        <!-- Contenido dinamico -->
+        <main>
+            {% block content %}         
+            {% endblock %}  
+            
+        </main>  
+        
+    </div>
+{% block extra_scripts %} {% endblock %}
+</body>
+</html>

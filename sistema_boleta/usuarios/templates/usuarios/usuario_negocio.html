@@ -1,0 +1,89 @@
+{% extends 'core/base.html' %}
+
+{% load static %}
+
+{% block title %} Asignaciones {% endblock %}
+{% block page_title %} Asignación de Usuarios a Negocios {% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'usuarios/css/asignations_design.css' %}">
+<script src={% static 'usuarios/js/asignations.js' %}></script>
+
+<div class="asignaciones-container">
+    <h1>Asignación de Usuarios a Negocios</h1>
+
+    <!-- Mensajes -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mensaje {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Botón para abrir modal -->
+    <button class="btn" id="abrirModal">+ Asignar negocio</button>
+
+    <!-- Tabla de asignaciones -->
+    <table class="tabla-asignaciones">
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Negocio</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for negocio in negocios %}
+                {% if negocio.usuario %}
+                <tr>
+                    <td>{{ negocio.usuario.nombre }}</td>
+                    <td>{{ negocio.nombre }}</td>
+                    <td>
+                        {% if negocio.idNegocio %}
+                            <a href="javascript:void(0);" class="btn btn-danger"
+                            onclick="modalConfirmacion('¿Deseas desasignar este negocio del usuario?', '{% url 'usuarios:desasignar_negocio' negocio.idNegocio %}')">
+                            ❌ Desasignar
+                            </a>
+                        {% else %}
+                            <span class="text-danger">Sin ID </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal personalizado -->
+<div id="modalAsignacion" class="modal">
+    <div class="modal-contenido">
+        <span class="cerrar" id="cerrarModal">&times;</span>
+        <h2>Asignar negocio a usuario</h2>
+        <form method="POST" action="{% url 'usuarios:usuario_negocio' %}">
+            {% csrf_token %}
+            <div class="formulario">
+                <div>
+                    <label for="id_usuario">Usuario</label>
+                    {{ form.usuario }} 
+                </div>
+                <div>
+                    <label for="id_negocio">Negocio sin Asignar</label>
+                    {{ form.negocio }} 
+                </div>
+                <button type="submit" class="btn">Asignar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Confirmación -->
+<div id="modal-confirmacion" class="modal">
+    <div class="modal-contenido">
+        <p id="mensaje-confirmacion">¿Estás seguro?</p>
+        <div class="botones">
+            <button id="btn-confirmar" class="btn">Sí</button>
+            <button id="btn-cancelar" class="btn danger">Cancelar</button>
+        </div>
+    </div>
+</div>
+{%  endblock %}

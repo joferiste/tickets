@@ -1,0 +1,100 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %} Visualización de Usuarios {% endblock %}
+{% block page_title %} Visualización de Usuario {% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'usuarios/css/design_update.css' %}">
+<script src="{% static 'usuarios/js/scriptsUpdate.js' %}"> </script>
+<div id="alert-container" class="alert-container hidden"></div>
+
+<div class="main-content">
+    <div class="visualizar_usuarios">
+        <div class="retocar_titulo">
+            <h1 class="title-centre"> Visualización de Usuarios </h1>
+            <!-- Formulario de busqueda -->
+            <form method="POST" class="form-busqueda">
+                {% csrf_token %}
+                {{ form.q }}
+                <button type="submit" class="btn-buscar"> Buscar </button>
+            </form>
+        </div>
+        <!-- Resultados -->
+        <div class="resultados">
+            {% if usuarios %}
+                <table class="tabla-usuarios">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Fecha de Nacimiento</th>
+                            <th>DPI</th>
+                            <th>NIT</th>
+                            <th>Dirección</th>
+                            <th>Correo Electrónico</th>
+                            <th>Teléfono 1</th>
+                            <th>Teléfono 2</th>
+                            <th>Estado</th>
+                            <th>Fecha de Ingreso al Sistema</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody >
+                        {% for usuario in usuarios %}
+                        <tr id="usuario-{{ usuario.idUsuario }}">
+                            <td class="nombre"> {{ usuario.nombre }}</td>
+                            <td class="fechaNacimiento"> {{ usuario.fechaNacimiento|default_if_none:"---" }}</td>
+                            <td class="dpi"> {{ usuario.dpi }}</td>
+                            <td class="nit"> {{ usuario.nit|default_if_none:"---" }}</td>
+                            <td class="direccionCompleta"> {{ usuario.direccionCompleta }}</td>
+                            <td class="email"> {{ usuario.email|default_if_none:"---" }}</td>
+                            <td class="telefono1"> {{ usuario.telefono1 }}</td>
+                            <td class="telefono2"> {{ usuario.telefono2|default_if_none:"---" }}</td>
+                            <td class="estado"> {{ usuario.estado }}</td>
+                            <td class="fechaCreacion"> {{ usuario.fechaCreacion }}</td>   
+                            <td>
+                                <button class="btns-actions" title="Editar" onclick="openEditModalUsuario({{ usuario.idUsuario }},  '{{ usuario.nombre|escapejs }}', '{{ usuario.fechaNacimiento|date:"Y-m-d" }}', '{{ usuario.nit|escapejs }}', '{{ usuario.dpi|escapejs }}', '{{ usuario.direccionCompleta|escapejs }}', '{{ usuario.email|escapejs }}', '{{ usuario.telefono1|escapejs }}', '{{ usuario.telefono2|escapejs }}', {{ usuario.estado.idEstadoUsuario }})">✏️</button>
+                                <button class="btns-actions" title="Eliminar" onclick="openDeleteModal({{ usuario.idUsuario }}, '{{ usuario.nombre }}')">🗑️</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p> No se encontraron usuarios </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Modal Editar -->
+    <div class="modal hidden" id="modal">
+        <div class="modal-content" id="modal-content">
+        </div>
+    </div>
+  
+    <!--  Modal Eliminar -->
+    <div id="deleteModal" class="modal hidden">
+        <div class="modal-content-delete">
+            <form method="POST" action="{% url 'usuarios:delete_usuario' %}">
+                {% csrf_token %}
+                <input type="hidden" name="id" id="delete_id">
+                <p id="delete_text"></p>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal('deleteModal')" class="btn-animated "> Cancelar </button>
+                    <button type="submit" class="btn-animated cancel"> Eliminar </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal confirmacion de eliminacion por excepcion de regla -->
+    <div id="errorModal" class="modal hidden">
+        <div class="modal-content-delete">
+            <p id="errorMessage"> No se puede eliminar el usuario porque tiene un negocio asignado. </p>
+            <div class="modal-actions">
+                <button type="button" onclick="closeModal('errorModal')" class="btn-animated"> Entendido </button>
+            </div>
+        </div>
+    </div>
+</div
+ {% endblock %}  

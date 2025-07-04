@@ -1,0 +1,480 @@
+/* ============== reset base =============== */
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ======= Layout general =========== */
+body{
+    background-color: #f5f5f5;
+    color: black;
+    display: flex;
+    flex-direction: column;
+    
+}
+
+header{
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background-color: #2f3142;
+    color: #ffffff;
+    font-size: 16px;
+    padding: 1rem 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 1px;
+}
+
+.logo{
+    font-size: 26px;
+
+}
+
+.page-title{
+    font-size: 24px;
+}
+ 
+.admin-info{
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    justify-content: flex-end;
+    background-color: #2f3142;
+    color: white;
+    padding: 5px 10px;
+    height: 35px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+/* Campana de notificaciones */
+.notif-btn{
+    position: relative;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+}
+
+.notif-icon{
+    width: 25px;
+    height: 25px;
+    transition: filter 0.3s ease;
+    filter: invert(1); /* Blanco sobre fondo oscuro */
+}
+
+/* Badge de cantidad */
+.notif-count{
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    background-color: #f44336;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 50%;
+    padding: 1.5px 4px;
+    min-width: 18px;
+    text-align: center;
+    box-shadow: 0 0 0 2px #2f3142;
+}
+
+/* Dropdown de notificaciones */
+.notif-dropdown{
+    position: absolute;
+    top: 45px;
+    right: 140px;
+    background-color: rgb(246, 236, 236);
+    color: #333;
+    min-width: 240px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 13px 0;
+    display: none;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s ease-in-out;
+    z-index: 1000;
+}
+
+.notif-dropdown.show{
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.notif-item{
+    padding: 10px 15px;
+    font-size: 14px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    color: #333;
+    transition: background 0.2s ease;
+}
+
+.notif-item:last-child{
+    border-bottom: none;
+}
+
+.notif-item:hover{
+    background-color: #f5f5f5;
+}
+
+/* Estado de usuario */
+.user-status{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    font-size: 15px;
+    border-radius: 20px;
+    padding: 12px;
+    border: none;
+    background-color: #4a3f3f;
+    cursor: pointer;
+}
+
+.user-circle{
+    width: 20px;
+    height: 20px;
+    background-color: #f07d29;
+    border-radius: 50%;
+}
+
+/* ======== Secciones laterales ============= */
+.sidebar {
+    position: fixed;
+    width: 260px;
+    height: calc(100vh - 60px);
+    background-color: #f3efec;
+    padding: 2.5rem 1.5rem;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.03);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #d3c7bc;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    z-index: 100;
+    height: 92vh;
+    bottom: -8px;
+}
+
+.sidebar a,
+.submenu-toggle {
+    display: block;
+    font-size: 17px;
+    color: black;
+    padding: 0.9rem 1.2rem;
+    border-radius: 16px;
+    text-decoration: none;
+    transition: background .3s, transform .25s;
+}
+
+.submenu-toggle {
+    border: none;
+    background-color: transparent;
+    width: 100%;
+    text-align: left;
+}
+
+.sidebar a:hover,
+.sidebar .submenu-toggle:hover {
+    background: #e6dada;
+    transform: translateX(7px);
+}
+
+.submenu-toggle::after {
+    content:"▸";
+    float: right;
+    transition: transform .4s;
+}
+
+.submenu-toggle.open::after {
+    transform: rotate(90deg);
+}
+
+.sidebar .active,
+.sidebar .submenu a.active {
+    background: rgb(240, 231, 231);
+    font-weight: 550;
+    transform: translateX(6px);
+}
+
+.submenu {
+    border-left: 1px solid #5a3f3f;
+    width: 95%;
+    margin-left: 20px;
+    padding: 0 5px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height .35s ease, opacity .35s ease;
+}
+
+.submenu a {
+    font-size: 14px;
+    padding: 12px 20px;
+    margin-left: 2%;
+    width: 95%;
+    border-radius: 16px;
+}
+
+.submenu.open {
+    max-height: 150px;
+    opacity: 1;
+}
+
+
+
+/* ========== Contenido Principal ============ */
+.main-content {
+    margin-left: 250px;
+    padding: 3rem;
+    background-color: #f5f5f5;
+    box-sizing: border-box;
+    display: flex;
+    gap: 5rem;
+    margin-top: 65px;
+    }
+
+/* ========== Transición de los elementos pantalla principal =========== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0);}
+}
+
+
+/* =========== Tarjeta de locales ============= */
+
+.locales-mapa{
+    margin-left: 20px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 2px;
+    padding: 20px;
+    height: 575px;
+    width: 800px;
+    background-color: #f5eaea;
+    border: 3.5px solid #c0c0c0;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.local{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 18px;
+    font-size: 16px;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;  
+}  
+
+.local:hover{
+    transform: scale(1.05);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    z-index: 5;
+}
+
+/* Colores por estado */
+.local.disponible{
+   background-color: #0984e3; 
+   color: white;
+   border: 1px solid #8fb9b7;
+}
+
+.local.ocupado{
+    background-color: rgb(193, 171, 134);
+    color: black;
+    border: 1px solid #ddd1c2; 
+}
+
+/* Posicionamiento especifico segun el mapa */
+.local-1{
+    grid-column: 1;
+    grid-row: 4;
+}
+
+.local-2{
+    grid-column: 1;
+    grid-row: 3; 
+}
+
+.local-3{
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.local-4{
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.local-5{
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.local-6{
+    grid-column: 3;
+    grid-row: 1;
+}
+
+.local-7{
+    grid-column: 4;
+    grid-row: 1;
+}
+
+.local-8{
+    grid-column: 5 / 5;
+    grid-row: 1 / 5;
+}
+
+/*Badge con el nombre de la posicion */
+.badge-position {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    background-color: #e74c3c;
+    color: white;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+    
+}
+
+
+/* Tooltip */
+
+.tooltip{
+    visibility: hidden;
+    background-color: white;
+    color: black;
+    text-align: left;
+    padding: 0.7rem;
+    border-radius: 8px;
+    position: absolute;
+    bottom: 120%;
+    left: 62%;
+    transform: translateX(-50%) translateY(25px); /* Empieza desde mas abajo */
+    z-index: 10;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    opacity: 0;
+    transition: opacity 0.3s ease transform 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tooltip::after{
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(10%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: white transparent transparent transparent;
+}
+
+.local:hover .tooltip{
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-90px) translateY(19px);
+}
+
+.local-8 .tooltip{
+    bottom: 105%;
+}
+
+/* ========= Lista lateral derecho ========== */
+
+.right-panel{
+    border-radius: 14px;
+    width: 330px;
+    background: linear-gradient(140deg, #e0dcd8, #ede7e7);
+    box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.01);
+    padding: 1.2rem;
+    transition: background 0.3s ease-in-out;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.right-panel h3{ 
+    font-size: 24px;
+    color: #4a3f39;
+    border-bottom: 1px solid #a68a64;
+    padding-bottom: 0.3rem;
+}
+
+.only-name{
+    font-size: 20px;
+    font-weight: bold;
+    color: #4a3f39;   
+}
+
+.responsably-name{
+    font-size: 14px;   
+}
+
+.business-item{
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    gap: 0.1rem;
+    padding: 0.2rem;
+    margin-bottom: 0.2rem;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.business-item:hover{
+    transform: translateX(1px);
+}
+
+.icon-box{
+    background-color: #4a3f3f;
+    border-radius: 8px;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+}
+
+.icon-box img{
+    width: 22px;
+    height: 22px;
+    filter: invert(1);
+}
+
+.business-name{
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 6px;
+    transition: transform 0.2s ease;
+}
+
+.business-name:hover{
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+
+/* ======= Notificaciones / usuario ======== */
+.user-info{
+    font-size: 0.9rem;
+    color: #f5f5f5;
+}

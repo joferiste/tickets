@@ -1,0 +1,70 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %} Crear Usuario {% endblock %}
+
+{% block page_title %} Creación de Usuarios {% endblock %}
+
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'usuarios/css/estilos_usuarios.css' %}">
+<script src="{% static 'usuarios/js/main.js' %}"> </script>
+
+<div class="main-content">
+    <div class="main-usuario">
+        <p class="form-description"> Formulario para la creación de nuevos usuarios </p>
+        {% if messages %}
+            <div class="message-container">
+                {% for message in messages %}
+                    <div class="alert"> {{ message }} </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <div class="form-wrapper">
+            <form method="POST" class="styled-form">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">
+                            {{ field.label }}
+                            {% if field.field.required %}
+                                <span style="color: red;">*</span>
+                            {% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <div class="form-error">{{ field.errors }} </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                <button type="submit" class="btn-animated"> Guardar Usuario </button>
+            </form>
+            <div class="required_fields">* Campo requerido</div>
+        </div>
+    </div>
+
+    <!-- Botón flotante -->
+    <button id="open-modal-btn" class="floating-add-btn" title="Agregar Estado">+</button>
+
+    <!-- Modal emergente -->
+    <div id="estado-modal" class="estado-modal hidden">
+        <form id="estado-form" method="POST" action="{% url 'usuarios:crear_estado' %}">
+            {% csrf_token %}
+            <h3 class="modal-title"> Nuevo estado </h3>
+            <div class="form-group-modal">
+                <label for="{{ estado_form.nombre.id_for_label }}"> {{ estado_form.nombre.label }} </label>
+                {{ estado_form.nombre }}
+                {% if estado_form.nombre.errors %}
+                    <div class="error"> {{ estado_form.nombre.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn-animated"> Guardar </button>
+                <button type="button" id="cancel-modal-btn" class="btn-animated cancel"> Cancelar </button> 
+            </div>
+        </form>
+    </div>
+
+</div>
+
+{% endblock %}

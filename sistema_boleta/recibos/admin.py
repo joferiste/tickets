@@ -1,3 +1,6 @@
 from django.contrib import admin
+from recibos.models import Recibo, EstadoRecibo
 
-# Register your models here.
+
+admin.site.register(Recibo)
+admin.site.register(EstadoRecibo)

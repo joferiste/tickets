@@ -1,0 +1,45 @@
+{% load static %}
+<form method="POST" id="formEditarNegocio" novalidate>
+    {% csrf_token %}
+    <h2 class="custom_title"> Edición Negocio </h2> 
+    <input type="hidden" name="id" value="{{ negocio.idNegocio }}">
+    {% for field in form %}
+        <div class="form-group">
+            {{ field.label_tag }}
+            {{ field }}
+
+             <!-- Personalizado para mostrar errores del frontend -->
+            {% if field.name == 'nombre' %}
+                <div class="input-error-message" id="error-id_nombre"></div><!--Errores de nombre desde el frontend-->
+            {% elif field.name == 'descripcion' %}    
+                <div class="input-error-message" id="error-id_descripcion"></div><!--Errores de nivel desde el frontend-->
+            {% elif field.name == 'telefono1' %}
+                <div class="input-error-message" id="error-id_telefono1"></div><!--Errores de nivel desde el frontend-->
+            {% elif field.name == 'telefono2' %}
+                <div class="input-error-message" id="error-id_telefono2"></div><!--Errores de nivel desde el frontend-->
+            {% elif field.name == 'email' %}
+                <div class="input-error-message" id="error-id_email"></div><!--Errores de nivel desde el frontend-->
+            {% elif field.name == 'nit' %}
+                <div class="input-error-message" id="error-id_nit"></div><!--Errores de nivel desde el frontend-->
+            {% elif field.name == 'estado' %}
+                <div class="input-error-message" id="error-id_estado"></div><!--Errores de nivel desde el frontend-->
+            {% elif field.name == 'categoria' %}
+                <div class="input-error-message" id="error-id_categoria"></div><!--Errores de nivel desde el frontend-->
+            {% elif field.name == 'usuario' %}
+                <div class="input-error-message" id="error-id_usuario"></div><!--Errores de nivel desde el frontend-->
+            {% endif %}
+
+            {% if field.errors %}
+                <div class="error-text">{{ field.errors|striptags }}</div><!-- Errores del backend -->
+            {% endif %}
+        </div>
+    {% endfor %}
+    {% if form.non_field_errors %}
+        <div class="error-text">{{ form.non_field_errors|striptags }}</div>
+    {% endif %}
+
+    <div class="modal-actions">
+        <button type="submit" class="btn-animated"> Guardar Cambios </button>
+        <button type="button" onclick="openDeleteModalNegocio('modal')" class="btn-animated cancel"> Salir </button>
+    </div>
+</form>   

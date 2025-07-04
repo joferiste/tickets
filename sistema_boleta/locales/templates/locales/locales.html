@@ -1,0 +1,125 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load locales_filters %}
+
+{% block title %} Crear Local {% endblock %}
+
+{% block page_title %} Creación de Locales {% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'locales/css/estilos_locales.css' %}">
+<script src="{% static 'locales/js/main.js' %}"> </script>
+
+<div class="main-content">
+    <div class="main-local">
+        <p class="form-description"> Formulario para la creación de nuevos locales </p>   
+        {% if messages %}
+            <div class="message-container">
+                {% for message in messages %}
+                    <div class="alert {{ message.tags }}"> {{ message }} </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% if bloqueado %}
+            <div class="message-container">
+                <div class="alert-static"> ⚠️ No se pueden crear más locales. El límite máximo de 8 ha sido alcanzado. </div>
+            </div>
+        {% endif %}
+        <div class="form-wrapper">
+            <form method="POST" class="styled-form">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">
+                            {{ field.label }}    
+                            {% if field.field.required %}
+                                <span style="color: red;">*</span>
+                            {% endif %}
+                        </label>
+                        {{ field|add_disabled:bloqueado }}
+                        {% if field.errors %}
+                            <div class="form-error">{{ field.errors }} </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                <button type="submit" class="btn-animated {% if bloqueado %} btn-deshabilitado {% endif %}" {% if bloqueado %} disabled {% endif %}> Crear Local </button>
+            </form>
+            <div class="required_fields">* Campo requerido</div>
+        </div>
+    </div>
+
+    <!-- Botón flotante 1 -Estado- -->
+    {% if not bloqueado %}
+    <button id="open-modal-btn" class="floating-add-btn" title="Agregar Estado"  {{ bloqueado|add_disabled_attr }}>+</button>
+    {% endif %}
+    <!-- Modal emergente -->
+    <div id="estado-modal" class="estado-modal hidden">
+        <form id="form-estado" method="POST" action="{% url 'locales:create_estado' %}">
+            {% csrf_token %}
+            <h3 class="modal-title"> Nuevo estado </h3>
+            <div class="form-group-modal">
+                <label for="{{ estado_form.nombre.id_for_label }}"> {{ estado_form.nombre.label }}</label>
+                {{ estado_form.nombre }}
+                {% if estado_form.nombre.errors %}
+                    <div class="error"> {{ estado_form.nombre.errors }}</div>
+                {% endif %}
+            </div> 
+            <div class="modal-actions">
+                <button type="submit" class="btn-animated"> Guardar </button>
+                <button type="button" id="cancel-modal-btn" class="btn-animated cancel"> Cancelar </button> 
+            </div>
+        </form>
+    </div> 
+
+    <!-- Botón flotante 2  -Nivel- -->
+    {% if not bloqueado %}
+    <button id="open-modal-btn-nivel" class="floating-add-btn-nivel" title="Agregar Nivel" {{ bloqueado|add_disabled_attr }}>+</button>
+    {% endif %}
+    <!-- Modal emergente -->
+    <div id="modal-nivel" class="modal-nivel hidden">
+        <form id="form-nivel" method="POST" action="{% url 'locales:create_nivel' %}">
+            {% csrf_token %}
+            <h3 class="modal-title"> Nuevo Nivel </h3>
+            <div class="form-group-modal">
+                <label for="{{ nivel_form.nombre.id_for_label }}"> {{ nivel_form.nombre.label }} </label>
+                {{ nivel_form.nombre }}
+                <label for="{{ nivel_form.costo.id_for_label }}"> {{ nivel_form.costo.label }} </label>
+                {{ nivel_form.costo }}
+                <label for="{{ nivel_form.ubicacion.id_for_label }}"> {{ nivel_form.ubicacion.label }} </label>
+                {{ nivel_form.ubicacion }}
+                {% if nivel_form.nombre.errors %}
+                    <div class="error"> {{ nivel_form.nombre.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn-animated"> Guardar </button>
+                <button type="button" id="cancel-modal-btn-nivel" class="btn-animated cancel"> Cancelar </button> 
+            </div>
+        </form>
+    </div>
+
+    <!-- Botón flotante 2  -Ubicacion- -->
+    {% if not bloqueado %}
+    <button id="open-modal-btn-ubicacion" class="floating-add-btn-ubicacion" title="Agregar Ubicación" {{ bloqueado|add_disabled_attr }}>+</button>
+    {% endif %}
+    <!-- Modal emergente -->
+    <div id="modal-ubicacion" class="modal-ubicacion hidden">
+        <form id="form-ubicacion" method="POST" action="{% url 'locales:create_ubicacion' %}">
+            {% csrf_token %}
+            <h3 class="modal-title"> Nueva Ubicación </h3>
+            <div class="form-group-modal">
+                <label for="{{ ubicacion_form.nombre.id_for_label }}"> {{ ubicacion_form.nombre.label }} </label>
+                {{ ubicacion_form.nombre }}
+                {% if ubicacion_form.nombre.errors %}
+                    <div class="error"> {{ ubicacion_form.nombre.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn-animated"> Guardar </button>
+                <button type="button" id="cancel-modal-btn-ubicacion" class="btn-animated cancel"> Cancelar </button> 
+            </div>
+        </form>
+    </div>    
+</div>
+
+{% endblock %}
