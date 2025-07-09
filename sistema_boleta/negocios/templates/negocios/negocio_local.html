@@ -1,0 +1,106 @@
+{% extends 'core/base.html' %}
+
+{% load static %}
+
+{% block title %} Asignaciones {% endblock %}
+{% block page_title %} Asignación de Negocios a Locales {% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'negocios/css/asignations_design.css' %}">
+<script src={% static 'negocios/js/asignations.js' %}></script>
+
+<div class="asignaciones-container">
+    <h1>Asignación de Negocios a Locales</h1>
+    <h2> Asignaciones activas </h2>
+
+    <!-- Mensajes -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mensaje {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Botón para abrir modal -->
+    <button class="btn" id="abrirModal">+ Asignar Local</button>
+
+    <!-- Tabla de asignaciones -->
+    <table class="tabla-asignaciones">
+        <thead>
+            <tr>
+                <th>Negocio</th>
+                <th>Local</th>
+                <th>Fecha Inicio</th>
+                <th>Fecha Fin</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ocupacion in asignaciones %}
+                <tr>
+                    <td>{{ ocupacion.negocio.nombre }}</td>
+                    <td>{{ ocupacion.local.nombre }}</td>
+                    <td>{{ ocupacion.fecha_inicio }}</td>
+                    <td>
+                        {% if ocupacion.fecha_fin %}
+                            {{ ocupacion.fecha_fin }}
+                        {% else %}
+                            <span class="en-curso"> En Curso </span>
+                        {% endif %}
+                        </td>                    
+                    <td>
+                        {% if ocupacion.idOcupacion %}
+                            {% if not ocupacion.fecha_fin %}
+                                <a href="javascript:void(0);" class="btn btn-danger"
+                                onclick="modalConfirmacion('¿Deseas desasignar este local del negocio?', '{% url 'negocios:desasignar_local' ocupacion.idOcupacion %}')">
+                                ❌ Desasignar
+                                </a>
+                            {% else %}
+                                <span class="text-muted"> Finalizado </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-danger">Sin ID </span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal personalizado -->
+<div id="modalAsignacion" class="modal">
+    <div class="modal-contenido">
+        <span class="cerrar" id="cerrarModal">&times;</span>
+        <h2>Asignar Negocio a Local</h2>
+        <form method="POST" action="{% url 'negocios:negocio_local' %}">
+            {% csrf_token %}
+            <div class="formulario">
+                <div>
+                    <label for="id_negocio">Negocio</label>
+                    {{ form.negocio }} 
+                </div>
+                <div> 
+                    <label for="id_local">Local</label>
+                    {{ form.local }} 
+                </div>
+                <div>
+                    <label for="id_fecha_inicio">Fecha de Inicio</label>
+                    {{ form.fecha_inicio }} 
+                </div>
+                <button type="submit" class="btn">Asignar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Confirmación -->
+<div id="modal-confirmacion" class="modal">
+    <div class="modal-contenido">
+        <p id="mensaje-confirmacion">¿Estás seguro?</p>
+        <div class="botones">
+            <button id="btn-confirmar" class="btn">Sí</button>
+            <button id="btn-cancelar" class="btn danger">Cancelar</button>
+        </div>
+    </div>
+</div>
+{%  endblock %}

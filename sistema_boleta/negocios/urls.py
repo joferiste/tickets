@@ -11,5 +11,6 @@ urlpatterns = [
     path('editar_negocio/<int:id>/', views.editar_negocio, name='editar_negocio'),
     path('actualizar_negocio/', views.actualizar_negocio, name='actualizar_negocio'),
     path('delete_negocio/', views.delete_negocio, name='delete_negocio'),
-
+    path('negocio_local/', views.negocio_local, name='negocio_local'),
+    path('desasignar_local/<int:ocupacion_id>/', views.desasignar_local, name='desasignar_local'),
 ]

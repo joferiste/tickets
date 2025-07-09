@@ -1,12 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse
-from negocios.forms import NegocioForm, EstadoNegocioForm, CategoriaForm, BusquedaNegocioForm
+from negocios.forms import NegocioForm, EstadoNegocioForm, CategoriaForm, BusquedaNegocioForm, AsignarLocalForm
 from negocios.models import EstadoNegocio, Categoria, Negocio
+from locales.models import Local, OcupacionLocal, EstadoLocal   
 import json
 from django.db.models.deletion import ProtectedError
 from django.views.decorators.http import require_POST
 from django.template.loader import render_to_string
+from django.utils import timezone
 
 
 def CreacionNegocios(request):
@@ -173,4 +175,65 @@ def delete_negocio(request):
             "error": "❌ No se puede eliminar este negocio porque está asignado a otros elementos."
         })
 
-    
+def negocio_local(request):
+    # 1. Obtener ocupaciones activas para mostrar en la tabla
+    asignaciones = OcupacionLocal.objects.filter(fecha_fin__isnull=True).select_related('local', 'negocio').order_by('-idOcupacion')
+
+    # 2. Obtener ID's de locales ocupados para filtrar los disponibles
+    locales_ocupados_ids = asignaciones.values_list('local_id', flat=True)
+
+    # 3. Excluir esos locales ocupados
+    locales_disponibles = Local.objects.exclude(idLocal__in=locales_ocupados_ids)
+
+    if request.method == 'POST':
+        form = AsignarLocalForm(request.POST)
+        form.fields['local'].queryset = locales_disponibles
+
+        if form.is_valid():
+            negocio = form.cleaned_data['negocio']
+            local = form.cleaned_data['local']
+            fecha_inicio = form.cleaned_data['fecha_inicio']
+
+            # Verificar que ese local no esté ya asignado activamente
+            if OcupacionLocal.objects.filter(local = local, fecha_fin__isnull=True).exists():
+                messages.error(request, f"El local {local.nombre} ya está ocupado.")
+            else:
+                OcupacionLocal.objects.create(
+                    local = local, 
+                    negocio = negocio,
+                    fecha_inicio = fecha_inicio
+                )
+
+                # Cambiar estado del local a Ocupado
+                estado_ocupado = get_object_or_404(EstadoLocal, nombre__iexact="Ocupado")
+                local.estado = estado_ocupado
+                local.save()
+
+                messages.success(request, f"Local {local.nombre} asignado a {negocio.nombre}.")
+                return redirect('negocios:negocio_local')
+    else:
+        form = AsignarLocalForm()
+        form.fields['local'].queryset = locales_disponibles
+
+    context = {
+        'form': form,
+        'asignaciones': asignaciones
+    }
+    return render(request, 'negocios/negocio_local.html', context)
+
+
+def desasignar_local(request, ocupacion_id):
+    ocupacion = get_object_or_404(OcupacionLocal, pk=ocupacion_id, fecha_fin__isnull=True)
+
+    # Finaliza la Ocupacion
+    ocupacion.fecha_fin = timezone.now().date()
+    ocupacion.save()
+
+    # Cambia el estado del local a 'Disponible'
+    estado_disponible = get_object_or_404(EstadoLocal, nombre__iexact="Disponible")
+    local = ocupacion.local
+    local.estado = estado_disponible
+    local.save()
+
+    messages.info(request, f"Local {local.nombre} fue desasignado del negocio {ocupacion.negocio.nombre} y marcado como Disponible")
+    return redirect('negocios:negocio_local')

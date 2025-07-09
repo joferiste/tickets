@@ -1,7 +1,9 @@
 from django import forms
 from negocios.models import Negocio, EstadoNegocio, Categoria
+from locales.models import Local, OcupacionLocal
 import unicodedata
 import re
+from django.utils import timezone
 
 def quitar_tildes(text):
     return ''.join(
@@ -164,3 +166,21 @@ class BusquedaNegocioForm(forms.Form):
         label = '',
         widget=forms.TextInput(attrs={'placeholder': 'Buscar por nombre'})
     ) 
+
+
+class AsignarLocalForm(forms.Form):
+    negocio = forms.ModelChoiceField(
+        queryset=Negocio.objects.all(), 
+        label="Negocio"
+        )
+
+    local = forms.ModelChoiceField(
+        queryset=Local.objects.none(),
+        label="Locales Disponibles"
+    )
+
+    fecha_inicio = forms.DateField(
+        widget = forms.DateInput(attrs={'type' : 'date'}),
+        initial=timezone.now().date(),
+        label = "Fecha de Inicio",
+    )

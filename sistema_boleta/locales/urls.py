@@ -12,5 +12,6 @@ urlpatterns = [
     path('editar_local/<int:id>/', views.editar_local, name='editar_local'),
     path('actualizar_local/', views.actualizar_local, name='actualizar_local'),
     path('delete_local/', views.delete_local, name='delete_local'),
-
+    path('orden_local/', views.orden_local, name='orden_local'),
+    path('desasignar_posicion/<int:local_id>/', views.desasignar_posicion, name='desasignar_posicion'),
 ]

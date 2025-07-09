@@ -88,13 +88,6 @@
                 showAlert("Ocurrió un error al actualizar el local", "error");
             });
         }
-
-        window.onclick = (e) => {
-        if (e.target == modal) {
-            modal.style.display = 'none';
-            enlaceConfirmacion = null;
-        }
-    };
     });
 
     function showAlert(message, type = "success") {
@@ -250,12 +243,7 @@
         document.getElementById('deleteModal').classList.remove('hidden');
 
 
-        window.onclick = (e) => {
-        if (e.target == modal) {
-            modal.style.display = 'none';
-            enlaceConfirmacion = null;
-        }
-    };
+        
     };
 
     function closeModal(id){

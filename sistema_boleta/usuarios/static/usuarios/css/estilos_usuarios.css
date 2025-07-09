@@ -14,7 +14,7 @@
     max-width: 1200px;
     width: 100%;
     margin: 1.3rem auto;
-    animation: fadeIn 0.5s ease-in-out;
+    animation: fadeIn 0.8s ease-in-out;
 }
 
 .form-description{
@@ -85,7 +85,7 @@
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-12px); }
+    from { opacity: 0; transform: translateY(-18px); }
     to   { opacity: 1; transform: translateY(0);}
 }
 
@@ -129,7 +129,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: fadeIn 0.5s ease-in-out;
+    animation: fadeIn 0.8s ease-in-out;
 }
 
 .floating-add-btn.active {

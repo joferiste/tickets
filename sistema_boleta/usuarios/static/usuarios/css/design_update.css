@@ -1,9 +1,13 @@
 .visualizar_usuarios {
     background-color: #ffffff;
     width: 100%;
-    padding: 20px;
+    padding: 25px;
     border-radius: 6px;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.8s ease-in-out;
 }
+
+
 
 .form-busqueda {
     display: flex;
@@ -32,11 +36,16 @@
     background-color: #2a4d5c;
 }
 
+.retocar_titulo {
+    animation: fadeIn 0.8s ease-in-out;
+}
+
 /* div de los resultados */
 .resultados {
     margin-top: 30px;
-    overflow-y: auto;
     scroll-behavior: smooth;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+    
 }
 
 .tabla-usuarios {
@@ -46,7 +55,7 @@
     border-spacing: 0;
     overflow: hidden;
     border-radius: 12px;
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+    animation: fadeIn 1s ease;
 }
 
 /* Cabecera */
@@ -214,7 +223,7 @@
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(2px);
+        transform: translateY(-18px);
     }
     to {
         opacity: 1;

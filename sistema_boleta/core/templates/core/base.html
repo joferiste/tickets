@@ -44,7 +44,10 @@
                 <div id="asignaciones-submenu" class="submenu">
                     <a href="{% url 'usuarios:usuario_negocio' %}"
                         class="{% active 'usuario_negocio' %}"> Usuarios a Negocios </a>
-
+                    <a href="{% url 'negocios:negocio_local' %}"
+                        class="{% active 'negocio_local' %}"> Negocios a Locales </a>
+                    <a href="{% url 'locales:orden_local' %}"
+                        class="{% active 'orden_local' %}"> Orden de Locales </a>
                 </div>
             </div> 
             

@@ -27,15 +27,15 @@
                             </strong>
                             {% with ocupacion=ocupaciones|get_ocupacion:local.idLocal %}
                                 {% if ocupacion %}
-                                    <strong>Negocio</strong> {{ ocupacion.negocio.nombre }}<br>
-                                    <strong>Cliente</strong> {{ ocupacion.negocio.usuario }}<br>
-                                    <strong>Inicio</strong> {{ ocupacion.fecha_inicio|date:"d/m/Y" }}<br>
+                                    <br><br><strong>Negocio:</strong> {{ ocupacion.negocio.nombre }}<br>
+                                    <strong>Cliente:</strong> {{ ocupacion.negocio.usuario }}<br>
+                                    <strong>Inicio:</strong> {{ ocupacion.fecha_inicio|date:"d/m/Y" }}<br>
                                 {% else %}
-                                    <br><br>
+                                    <br>
                                 {% endif %}
                             {% endwith %}
-                            <strong>Nivel</strong> {{ local.nivel }}<br>
-                            <strong>Estado</strong> {{ local.estado }}<br>
+                            
+                            <strong>Estado:</strong> {{ local.estado }}<br>
                         {% else %}
                             <strong>Local {{ i }} (No asignado)</strong> 
                         {% endif %}

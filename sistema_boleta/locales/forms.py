@@ -12,6 +12,13 @@ def quitar_tildes(text):
     )
 
 class LocalForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        es_edicion = kwargs.pop('es_edicion', False) # Extraemos el flag
+        super().__init__(*args, **kwargs)
+
+        if es_edicion:
+            self.fields.pop('estado') # Se quita el campo solo si esta editando
+
     class Meta:
         model = Local
         fields = ['nombre', 'nivel', 'estado']
@@ -200,3 +207,12 @@ class BusquedaLocalForm(forms.Form):
             'placeholder': 'Buscar por nombre'
         })
     )
+
+class AsignarPosicionMapaForm(forms.Form):
+    local = forms.ModelChoiceField(queryset=Local.objects.all(), widget=forms.HiddenInput())
+    posicionMapa = forms.ChoiceField(label= "Posición")
+
+    def __init__(self, *args, posiciones_ocupadas=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        posiciones_disponibles = [(str(i), f"Posicion {i}") for i in range(1,9) if i not in posiciones_ocupadas]
+        self.fields['posicionMapa'].choices = posiciones_disponibles

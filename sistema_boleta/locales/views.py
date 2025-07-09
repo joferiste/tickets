@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse
-from locales.forms import LocalForm, EstadoLocalForm, NivelForm, UbicacionForm, BusquedaLocalForm
+from locales.forms import LocalForm, EstadoLocalForm, NivelForm, UbicacionForm, BusquedaLocalForm, AsignarPosicionMapaForm
 from locales.models import Nivel, EstadoLocal, Ubicacion, Local
 import json
 from django.template.loader import render_to_string
@@ -149,7 +149,9 @@ def visualizar_local(request):
 
 def editar_local(request, id):
     local = get_object_or_404(Local, idLocal=id)
-    form = LocalForm(instance=local)
+
+    # Se indica que es una edicion
+    form = LocalForm(instance=local, es_edicion=True)
 
     html = render_to_string("locales/form_editar_locales.html", {
         'form': form,
@@ -167,7 +169,9 @@ def actualizar_local(request):
         return JsonResponse({"success": False, "error":"id de local no proporcionado"})
     
     local = get_object_or_404(Local, idLocal=local_id)
-    form = LocalForm(request.POST, instance=local)
+
+    #Nuevamente, es una edicion
+    form = LocalForm(request.POST, instance=local, es_edicion=True)
 
     if form.is_valid():
         form.save()
@@ -207,4 +211,46 @@ def delete_local(request):
             "error": "❌ No se puede eliminar este usuario porque está asignado a otros elementos."
         })
 
+def orden_local(request):
+    locales = Local.objects.all().order_by('idLocal')
+    posiciones_ocupadas = Local.objects.exclude(posicionMapa__isnull=True).values_list('posicionMapa', flat=True)
+
+    if request.method == 'POST':
+        if 'asignar_posicion' in request.POST:
+            form = AsignarPosicionMapaForm(request.POST, posiciones_ocupadas=posiciones_ocupadas)
+            if form.is_valid():
+                local = form.cleaned_data['local']
+                posicion = int(form.cleaned_data['posicionMapa'])
+                local.posicionMapa = posicion
+                local.save()
+                messages.success(request, f"Se asignó la posición {posicion} al local {local.nombre}.")
+                return redirect('locales:orden_local')
+            
+        elif 'desasignar_posicion' in request.POST:
+            local_id = request.POST.get('local_id')
+            local = get_object_or_404(Local, pk=local_id)
+            posicion = local.posicionMapa
+            local.posicionMapa = None
+            local.save()
+            messages.info(request, f"Se desasignó la posición {posicion} del local {local.nombre}.")
+            return redirect('locales:orden_local')
+        
+        elif 'reiniciar' in request.POST:
+            Local.objects.update(posicionMapa=None)
+            messages.warning(request, "Se han desasignado todas las posiciones.")
+            return redirect('locales:orden_local')
+
+    context = {
+        'locales': locales,
+        'posiciones_ocupadas': list(posiciones_ocupadas)
+    }
+
+    return render(request, 'locales/orden_local.html', context)
     
+def desasignar_posicion(request, local_id):
+    local = get_object_or_404(Local, idLocal=local_id)
+    local.posicionMapa = None
+    local.save()
+    
+    messages.success(request, f"La posición del local {local.nombre} ha sido desasignada.")
+    return redirect('locales:orden_local')  # Ajusta el redirect según tu nombre de vista

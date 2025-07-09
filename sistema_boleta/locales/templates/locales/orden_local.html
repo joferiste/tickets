@@ -1,0 +1,111 @@
+{% extends 'core/base.html' %}
+
+{% load custom_tags %}
+
+{% load static %}
+
+{% block title %} Asignaciones {% endblock %}
+{% block page_title %} Ordenamiento de Locales {% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'locales/css/asignations_design.css' %}">
+<script src={% static 'locales/js/asignations.js' %}></script>
+
+<div class="asignaciones-container">
+    <h1>Orden de Locales en el Mapa</h1>
+
+    <!-- Mensajes -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mensaje {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Tabla de asignaciones -->
+    <table class="tabla-asignaciones">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Estado</th>
+                <th>Posición</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for local in locales %}
+                <tr>
+                    <td>{{ local.nombre }}</td>
+                    <td>{{ local.estado }}</td>
+                    <td>
+                        {% if local.posicionMapa %}
+                            {{ local.posicionMapa }}
+                        {% else %}
+                            <span class="text-muted">No asignado</span>
+                        {% endif %}
+                    </td>      
+                    <td>
+                        {% if local.posicionMapa %}
+                            <a href="javascript:void(0);" 
+                                class="btn btn-danger" 
+                                onclick="modalConfirmacion(
+                                    '¿Estás seguro que deseas desasignar la posición del local {{ local.nombre }}?', 
+                                    '{% url 'locales:desasignar_posicion' local.idLocal %}'
+                                )">
+                                ❌ Desasignar
+                            </a>
+                        {% else %}
+                            <button class="btn" onclick="abrirModal({{ local.idLocal }}, '{{  local.nombre }}')"> ✔️ Asignar </button>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!--Boton para reiniciar todo-->
+    <div class="contenedor-reiniciar">
+        <button onclick="modalConfirmacionReiniciar()" type="submit" class="btn btn-danger-reiniciar">  Reiniciar Orden </button>    
+    </div>
+</div>
+
+<form id="form-reiniciar" method="POST" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="reiniciar" value="1">
+</form>
+
+
+<!-- Modal de Asignación de Posición -->
+<div id="modalAsignacion" class="modal">
+    <div class="modal-contenido">
+        <span class="cerrar" id="cerrarModal">&times;</span>
+        <h2>Asignar Posición a Local</h2>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="local" id="local_id_modal">
+            <p id="local_nombre_modal"></p>
+            <label for="posicionMapa">Posición en el Mapa</label>
+            <select name="posicionMapa" required>
+                {% for i in 1|to:8 %}
+                    {% if i not in posiciones_ocupadas %}
+                        <option value="{{ i }}">Posición {{ i }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            <button type="submit" name="asignar_posicion" class="btn">Guardar</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Confirmación -->
+<div id="modal-confirmacion" class="modal-confirmacion">
+    <div class="modal-contenido-confirmacion">
+        <span class="cerrar" id="cerrarModal">&times;</span>
+        <p id="mensaje-confirmacion">¿Estás seguro?</p>
+        <div class="botones">
+            <button id="btn-confirmar" class="btn">Sí</button>
+            <button id="btn-cancelar" class="btn-danger-confirmacion">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+{%  endblock %}

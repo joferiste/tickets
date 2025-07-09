@@ -55,7 +55,7 @@ class Local(models.Model):
     class Meta:
         verbose_name = "Local"
         verbose_name_plural = "Locales"
-        ordering = ['-fechaCreacion']
+        ordering = ['-fechaCreacion'] 
 
 
 
@@ -69,3 +69,8 @@ class OcupacionLocal(models.Model):
 
     def __str__(self):
         return f"{self.local.nombre} - {self.negocio.nombre} ({self.fecha_inicio} a {self.fecha_fin or 'Actual'})"
+    
+    class Meta:
+        verbose_name = "OcupacionLocal"
+        verbose_name_plural = "OcupacionLocales"
+        ordering = ['-idOcupacion'] 
