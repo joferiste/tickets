@@ -245,7 +245,7 @@ header{
 
 /* ========== Transición de los elementos pantalla principal =========== */
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
+    from { opacity: 0; transform: translateY(-18px); }
     to   { opacity: 1; transform: translateY(0);}
 }
 
@@ -265,7 +265,7 @@ header{
     border: 3.5px solid #c0c0c0;
     border-radius: 20px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    animation: fadeIn 0.5s ease-in-out;
+    animation: fadeIn 0.8s ease-in-out;
 }
 
 .local{
@@ -279,9 +279,10 @@ header{
     transition: transform 0.25s ease, box-shadow 0.25s ease;  
 }  
 
-.local:hover{
-    transform: scale(1.05);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+.local:hover, 
+.local.resaltado{
+    transform: scale(1.08);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
     z-index: 5;
 }
 
@@ -297,6 +298,11 @@ header{
     color: black;
     border: 1px solid #ddd1c2; 
 }
+
+.local.adjuntos {
+    background-color: rgb(193, 171, 134);
+}
+
 
 /* Posicionamiento especifico segun el mapa */
 .local-1{
@@ -407,7 +413,7 @@ header{
     box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.01);
     padding: 1.2rem;
     transition: background 0.3s ease-in-out;
-    animation: fadeIn 0.5s ease-in-out;
+    animation: fadeIn 0.8s ease-in-out;
 }
 
 .right-panel h3{ 
@@ -417,6 +423,10 @@ header{
     padding-bottom: 0.3rem;
 }
 
+.right-panel a {
+    text-decoration: none;
+}
+
 .only-name{
     font-size: 20px;
     font-weight: bold;
@@ -424,7 +434,8 @@ header{
 }
 
 .responsably-name{
-    font-size: 14px;   
+    font-size: 14px;
+    color: #4a3f39;    
 }
 
 .business-item{

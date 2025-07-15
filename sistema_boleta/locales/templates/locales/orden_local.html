@@ -4,15 +4,15 @@
 
 {% load static %}
 
-{% block title %} Asignaciones {% endblock %}
-{% block page_title %} Ordenamiento de Locales {% endblock %}
+{% block title %} Asignaciones de local{% endblock %}
+{% block page_title %} Ordenamiento de locales {% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'locales/css/asignations_design.css' %}">
 <script src={% static 'locales/js/asignations.js' %}></script>
 
 <div class="asignaciones-container">
-    <h1>Orden de Locales en el Mapa</h1>
+    <h1>Orden de locales en el mapa</h1>
 
     <!-- Mensajes -->
     {% if messages %}
@@ -99,7 +99,7 @@
 <!-- Modal de Confirmación -->
 <div id="modal-confirmacion" class="modal-confirmacion">
     <div class="modal-contenido-confirmacion">
-        <span class="cerrar" id="cerrarModal">&times;</span>
+        <span class="cerrar" id="cerrarModalConfirmacion">&times;</span>
         <p id="mensaje-confirmacion">¿Estás seguro?</p>
         <div class="botones">
             <button id="btn-confirmar" class="btn">Sí</button>

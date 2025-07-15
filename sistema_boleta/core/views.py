@@ -3,7 +3,7 @@ from negocios.models import Negocio
 from locales.models import Local, OcupacionLocal
 
 def home(request):
-    negocios = Negocio.objects.select_related('usuario').all()
+    negocios = Negocio.objects.select_related('usuario').filter(estado__nombre="Activo")
     locales = Local.objects.select_related('nivel', 'estado').prefetch_related('ocupaciones__negocio') # Locales existentes con su ocupacion actual
     
     # Se filtran las ocupaciones vigentes (fecha_fin es None o posterior a hoy)
@@ -16,3 +16,4 @@ def home(request):
                                                 'locales': locales,
                                                 'ocupaciones': ocupaciones_vigentes})
     
+ 

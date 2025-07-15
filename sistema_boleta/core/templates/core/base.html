@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %} Home {% endblock %}</title>
     <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">    
-    <script src="{% static 'core/js/main.js' %}"></script>
+    <script src="{% static 'core/js/main.js' %}" defer></script>
 </head>
 <body>
     <header class="header">
@@ -36,7 +36,9 @@
         <aside class="sidebar">
             <a href="{% url 'home' %}"
                 class="{% active 'home' %}"> Dashboard </a>
-            <a href="#"> Administración </a>
+            <a href="{% url 'administracion:boletas_sandbox' %}"
+                class="{% active 'boletas_sandbox' %}"> Administración </a>
+                
             <div class="submenu-container">
                 <button class="submenu-toggle" onclick="toggleSubmenu('asignaciones-submenu')">
                     Asignaciones 

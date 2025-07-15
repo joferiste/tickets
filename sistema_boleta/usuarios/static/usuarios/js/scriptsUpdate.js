@@ -253,6 +253,22 @@
     
     document.addEventListener("DOMContentLoaded", () => {
     const deleteForm = document.querySelector("#deleteModal form");
+    const modalDelete = document.getElementById('deleteModal')
+    const modal = document.getElementById('modal');
+    
+    
+
+    window.addEventListener('click', function (event) {
+        if (event.target === modalDelete) {
+            modalDelete.classList.add('hidden');
+        }
+    });
+
+    window.onclick = function (event) {
+        if (event.target === modal) {
+            modal.classList.add('hidden');
+        }
+    };
 
     deleteForm.addEventListener("submit", function (e) {
         e.preventDefault();
@@ -265,7 +281,7 @@
                 "X-CSRFToken": formData.get("csrfmiddlewaretoken")
             },
             body: formData
-        })
+        }) 
         .then(res => res.json())
         .then(data => {
             if (data.success) {

@@ -4,11 +4,15 @@ from django.http import JsonResponse
 from negocios.forms import NegocioForm, EstadoNegocioForm, CategoriaForm, BusquedaNegocioForm, AsignarLocalForm
 from negocios.models import EstadoNegocio, Categoria, Negocio
 from locales.models import Local, OcupacionLocal, EstadoLocal   
-import json
 from django.db.models.deletion import ProtectedError
 from django.views.decorators.http import require_POST
 from django.template.loader import render_to_string
 from django.utils import timezone
+from django.views.generic.detail import DetailView
+from boletas.models import Boleta
+from transacciones.models import Transaccion
+from recibos.models import Recibo
+import json
 
 
 def CreacionNegocios(request):
@@ -142,8 +146,7 @@ def actualizar_negocio(request):
                 "email": negocio.email, 
                 "nit": negocio.nit or "---",
                 "estado": str(negocio.estado), 
-                "categoria": str(negocio.categoria), 
-                "usuario": negocio.usuario.nombre,
+                "categoria": str(negocio.categoria)
             }
         })
     else:
@@ -215,6 +218,9 @@ def negocio_local(request):
         form = AsignarLocalForm()
         form.fields['local'].queryset = locales_disponibles
 
+        # Filtrar los negocios activos
+        form.fields['negocio'].queryset = Negocio.objects.filter(estado__nombre='Activo')
+
     context = {
         'form': form,
         'asignaciones': asignaciones
@@ -237,3 +243,17 @@ def desasignar_local(request, ocupacion_id):
 
     messages.info(request, f"Local {local.nombre} fue desasignado del negocio {ocupacion.negocio.nombre} y marcado como Disponible")
     return redirect('negocios:negocio_local')
+
+
+class PerfilNegocioView(DetailView):
+    model = Negocio
+    template_name = 'negocios/perfil.html'
+    context_object_name = 'negocio'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        negocio = self.get_object()
+        context['boletas'] = Boleta.objects.filter(negocio=negocio)
+        context['transacciones'] = Transaccion.objects.filter(boleta__negocio=negocio)
+        context['recibos'] = Recibo.objects.filter(transaccion__boleta__negocio=negocio)
+        return context  

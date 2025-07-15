@@ -25,7 +25,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-
 })
 
 let enlaceConfirmacion = null;

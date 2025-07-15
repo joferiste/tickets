@@ -1,0 +1,64 @@
+.main-content{
+    margin-left: 250px;
+    padding: 2rem;
+    box-sizing: border-box;
+    min-height: calc(100vh - 80px);
+    background-color: #f9f9f9;
+}
+
+.perfil-container {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    animation: fadeIn 0.8s ease-in-out;
+}
+
+.perfil-header {
+    background-color: #ffffff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    margin-bottom: 2rem;
+}
+
+.perfil-header h1 {
+    margin-bottom: 0.5rem;
+}
+
+.perfil-section {
+    background: #ffffff;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) ;
+}
+
+.perfil-section h2 {
+    margin-bottom: 1rem;
+}
+
+.perfil-section ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.perfil-section li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eaeaea;
+    font-size: 0.95rem;
+}
+
+.perfil-section li:last-child {
+    border-bottom: none;
+}
+
+.pendiente {
+    color: #c0392b;
+    font-weight: bold;
+}
+
+/* ========== Transición de los elementos pantalla principal =========== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-18px); }
+    to   { opacity: 1; transform: translateY(0);}
+}

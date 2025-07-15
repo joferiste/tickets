@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import PerfilNegocioView
 
 app_name = 'negocios'
 
@@ -13,4 +14,5 @@ urlpatterns = [
     path('delete_negocio/', views.delete_negocio, name='delete_negocio'),
     path('negocio_local/', views.negocio_local, name='negocio_local'),
     path('desasignar_local/<int:ocupacion_id>/', views.desasignar_local, name='desasignar_local'),
+    path('<int:pk>/perfil/', views.PerfilNegocioView.as_view(), name='perfil_negocio'),
 ]

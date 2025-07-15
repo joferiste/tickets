@@ -1,0 +1,77 @@
+{% extends 'core/base.html' %}
+
+{% load static %}
+
+{% block title  %} Perfil de {{ negocio.nombre }} {% endblock %}
+{% block page_title %} Perfil de {{ negocio.nombre }} {% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{% static 'negocios/css/perfiles_negocios.css' %}">
+
+<div class="main-content">
+    <div class="perfil-container">
+
+        <div class="perfil-header">
+            <h1> {{ negocio.nombre }}</h1>
+            <p><strong>Encargado:</strong> {{ negocio.usuario.nombre }}</p>
+            <p><strong>Correo:</strong> {{ negocio.email }}</p>
+            <p><strong>Teléfono:</strong> {{ negocio.telefono1 }}</p>
+            <p><strong>NIT:</strong> {{ negocio.nit|default_if_none:"No Ingresado" }}</p>
+            <p><strong>Estado:</strong> {{ negocio.estado.nombre }}</p>
+        </div>
+
+        <div class="perfil-section">
+            <h2>📄 Boletas Recibidas</h2>
+            <ul>
+                {% for boleta in boletas %}
+                    <li>
+                        {{ boleta.fechaIngreso|date:"d/m/Y H:i" }} - 
+                        Q{{ boleta.monto }} - 
+                        <a href="{{ boleta.imagen.url }}" target="_blank">Ver boleta</a>
+                    </li>
+                {% empty %}
+                    <li>No hay boletas registradas.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="perfil-section">
+            <h2>📊 Transacciones</h2>
+            <ul>
+                {% for transaccion in transacciones %}
+                    <li>
+                        {{ transaccion.fechaTransaccion|date:"d/m/Y H:i" }} -
+                        Estado: {{ transaccion.estado.nombre }} -
+                        Comentario: {{ transaccion.comentario|default:"Sin comentario" }}
+                    </li>
+                {% empty %}
+                    <li>No hay transacciones aún.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="perfil-section">
+            <h2>🧾 Recibos Generados</h2>
+            <ul>
+                {% for recibo in recibos %}
+                    <li>
+                        {{ recibo.fechaGeneracion|date:"d/m/Y H:i" }} -
+                        Correlativo: {{ recibo.correlativo }} -
+                        <a href="{{ recibo.archivo.url }}" target="_blank">Descargar</a> -
+                        {% if recibo.enviado %}
+                            Enviado: {{ recibo.fechaEnvio|date:"d/m/Y H:i" }}
+                        {% else %}
+                            <span class="pendiente">No enviado</span>
+                        {% endif %}
+                    </li>
+                {% empty %}
+                    <li>No hay recibos generados.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

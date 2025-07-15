@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const cerrar = document.querySelector('#modalAsignacion .cerrar');
     const modal = document.getElementById('modalAsignacion');
 
+
     if (abrir) abrir.onclick = () => modal.style.display = 'block';
     if (cerrar) cerrar.onclick = () => modal.style.display = 'none';
 
@@ -27,10 +28,15 @@ document.addEventListener('DOMContentLoaded', function () {
 let enlaceConfirmacion = null;
 
 function modalConfirmacion(mensaje, url) {
+    const cerrarModal = document.getElementById('cerrarModalConfirmacion')
     const modal = document.getElementById('modal-confirmacion');
     const texto = document.getElementById('mensaje-confirmacion');
     const btnConfirmar = document.getElementById('btn-confirmar');
     const btnCancelar = document.getElementById('btn-cancelar');
+
+    cerrarModal.onclick = () => {
+        modal.style.display = 'none';
+    };
 
     texto.textContent = mensaje;
     modal.style.display = 'block';

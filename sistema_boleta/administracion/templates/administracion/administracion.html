@@ -1,0 +1,67 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+
+{% block page_title %} Administración {% endblock %}
+
+{% block title %}Administración de Boletas{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{% static 'administracion/css/admin_style.css' %}">
+
+<div class="admin-container">
+    <h1>Administración de Boletas</h1>
+
+    <!-- Botón para revisar correos -->
+        <form action="{% url 'administracion:revisar_correos' %}" method="POST">
+            {% csrf_token %}
+            <button class="btn-primary">Revisar Correos</button>
+        </form>
+
+    <!-- Tabla de correos procesados -->
+    <div class="table-responsive">
+        <table class="boleta-table">
+            <thead>
+                <tr>
+                    <th>Remitente</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Asunto</th>
+                    <th>Negocio Detectado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for boleta in boletas %}
+                    <tr class="{% if boleta.es_valida %}valida{% else %}invalida{% endif %}">
+                        <td>{{ boleta.remitente }}</td>
+                        <td>{{ boleta.fecha_recepcion|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            {% if boleta.es_valida %}
+                                ✅
+                            {% else %}
+                                ❌
+                            {% endif %}
+                        </td>
+                        <td>{{ boleta.asunto|default:"(sin asunto)" }}</td>
+                        <td>
+                            {% if boleta.metadata.negocio %}
+                                {{ boleta.metadata.negocio }}
+                            {% else %}
+                                <em>No detectado</em>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'administracion:boleta_detalle' boleta.id %}" class="btn-small">🔍 Ver</a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="6">No hay boletas en el sandbox todavía.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

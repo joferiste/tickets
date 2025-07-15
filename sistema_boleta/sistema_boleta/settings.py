@@ -13,6 +13,18 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from django.conf import settings
 from django.conf.urls.static import static
+from decouple import config
+
+
+# ------ Configuracion del correo de entrada ------------
+EMAIL_SERVER = config('EMAIL_SERVER', default='imap.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', cast=int, default=993)
+EMAIL_USE_SSL = config('EMAIL_USE_SSL', cast=bool, default=True)
+
+EMAIL_USERNAME = config('EMAIL_USERNAME')
+EMAIL_PASSWORD = config('EMAIL_PASSWORD')
+
+print("Servidor IMAP ", EMAIL_SERVER)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -53,6 +65,7 @@ INSTALLED_APPS = [
     'historiales',
     'locales',
     'core',
+    'administracion',
 ]
 
 MIDDLEWARE = [

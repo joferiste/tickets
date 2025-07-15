@@ -104,7 +104,6 @@
 /* Hover */
 .tabla-usuarios tbody tr:hover {
     background-color: #e0f2fe;
-    cursor: pointer;
 }
 
 /* Control del modal */

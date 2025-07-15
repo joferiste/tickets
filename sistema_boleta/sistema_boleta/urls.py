@@ -6,5 +6,6 @@ urlpatterns = [
     path('', include('core.urls')), # <- Ruta del home
     path('usuarios/', include('usuarios.urls')),# <- Ruta de usuarios
     path('negocios/', include('negocios.urls')),# <- Ruta de negocios
-    path('locales/', include('locales.urls'))# <- Ruta de locales
+    path('locales/', include('locales.urls')),# <- Ruta de locales
+    path('administracion/', include('administracion.urls')),# <- Ruta de administracion
 ]

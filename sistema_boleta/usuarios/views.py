@@ -157,7 +157,10 @@ def usuario_negocio(request):
     else:
         form = AsignarNegocioForm()
 
-    context = {
+        #Filtrar los usuarios activos
+        form.fields['usuario'].queryset = Usuario.objects.filter(estado__nombre='Activo')
+
+    context = { 
         'form': form,
         'negocios': negocios
     }

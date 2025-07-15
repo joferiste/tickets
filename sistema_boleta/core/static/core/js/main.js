@@ -58,14 +58,40 @@ function toggleSubmenu(id){
 
 /* Mantener abierto el submenú que contiene el link activo */
 document.addEventListener('DOMContentLoaded', () => {
+    const locales = document.querySelectorAll('.local');
+
+    // ---------------------- RESALTAR AL PASAR EL MOUSE ----------------------
+    document.addEventListener('mouseover', function (event) {
+        const negocioLink = event.target.closest('[data-negocio]');
+        if (!negocioLink || (!negocioLink.classList.contains('business-name') && !negocioLink.closest('.business-name'))) {
+            return;
+        }
+
+        const nombreNegocio = negocioLink.dataset.negocio?.trim();
+
+        locales.forEach(local => {
+            if (local.dataset.negocio?.trim() === nombreNegocio) {
+                local.classList.add('resaltado');
+            }
+        });
+    });
+
+    document.addEventListener('mouseout', function () {
+        locales.forEach(local => {
+            local.classList.remove('resaltado');
+        });
+    });
+
+    // ---------------------- ABRIR SUBMENÚ ACTIVO ----------------------
     const activeLink = document.querySelector('.sidebar a.active');
-    if(activeLink){
-    const submenu = activeLink.closest('.submenu');
-        if(submenu){
+    if (activeLink) {
+        const submenu = activeLink.closest('.submenu');
+        if (submenu) {
             submenu.classList.add('open');
-            submenu.previousElementSibling.classList.add('open'); // el botón
+            submenu.previousElementSibling.classList.add('open');
         }
     }
-});
 
+    
+});
 

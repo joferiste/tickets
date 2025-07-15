@@ -13,34 +13,34 @@
     <div class="locales-mapa">
         {% for i in "12345678" %}
             {% with local=locales|get_local:i %}
-                <div class="local local-{{ i }} {% if local %}{{ local.estado.nombre|lower }}{% else %}Disponible{% endif %}">
+                {% with ocupacion=ocupaciones|get_ocupacion:local.idLocal %}
+                    <div class="local local-{{ i }} {% if local %}{{ local.estado.nombre|lower }}{% else %}Disponible{% endif %}"
+                        {% if ocupacion %} data-negocio="{{ ocupacion.negocio.nombre }}" {% endif %}>
+
                     <span class="badge-position">{{ i }}</span>
+
                     {% if local %}
                         {{ local.nombre }}
                     {% else %}
                         Local {{ i }}
                     {% endif %}
+
                     <div class="tooltip">
                         {% if local %}
                             <strong>
-                                {{ local.nombre|default:"Local sin nombre" }} (Posición {{ i }})
-                            </strong>
-                            {% with ocupacion=ocupaciones|get_ocupacion:local.idLocal %}
+                                <h3>{{ local.nombre|default:"Local sin nombre" }}</h3> 
+                            </strong> 
                                 {% if ocupacion %}
-                                    <br><br><strong>Negocio:</strong> {{ ocupacion.negocio.nombre }}<br>
-                                    <strong>Cliente:</strong> {{ ocupacion.negocio.usuario }}<br>
+                                    <br><strong>Negocio:</strong> {{ ocupacion.negocio.nombre }}<br>
                                     <strong>Inicio:</strong> {{ ocupacion.fecha_inicio|date:"d/m/Y" }}<br>
-                                {% else %}
-                                    <br>
                                 {% endif %}
-                            {% endwith %}
-                            
                             <strong>Estado:</strong> {{ local.estado }}<br>
                         {% else %}
                             <strong>Local {{ i }} (No asignado)</strong> 
                         {% endif %}
                     </div>
-                </div>
+                    </div>
+                {% endwith %}
             {% endwith %}
         {% endfor %}
     </div>
@@ -49,9 +49,11 @@
         <h3> Negocios </h3>
         <div class="business-item">
             {% for negocio in negocios %}
-                <div class="business-name">
-                    <div class="only-name"> {{ negocio.nombre }} </div>
-                    <div class="responsably-name"> {{ negocio.usuario.nombre }} </div>
+                <div class="business-name" data-negocio="{{ negocio.nombre }}">
+                    <a href="{% url 'negocios:perfil_negocio' negocio.idNegocio %}">
+                        <div class="only-name"> {{ negocio.nombre }} </div>
+                        <div class="responsably-name"> {{ negocio.usuario.nombre }} </div>
+                    </a>
                 </div>
             {% empty %}
                 <p> No hay negocios registrados.</p>
