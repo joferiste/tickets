@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from boletas.models import BoletaSandbox
-from boletas.services.validation import validar_boleta_sandbox
-from boletas.services.email_ingestor import procesar_correos
+from boletas.services.validation.validation import validar_boleta_sandbox
+from boletas.services.email_ingestor.email_ingestor import procesar_correos
 from django.http import HttpResponse
 
 def revisar_boletas(request):

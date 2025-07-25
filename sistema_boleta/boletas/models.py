@@ -12,6 +12,9 @@ class BoletaSandbox(models.Model):
     es_valida = models.BooleanField(default=False)
     motivo_rechazo = models.TextField(blank=True, null=True)
     procesado = models.BooleanField(default=False)
+    estado_validacion = models.CharField(max_length=30)
+    comentarios_validacion = models.CharField(max_length=355)
+    leido = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.remitente} - {self.fecha_recepcion.strftime('%Y-%m-%d %H:%M')}"

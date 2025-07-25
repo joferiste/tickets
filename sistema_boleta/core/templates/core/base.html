@@ -15,7 +15,7 @@
             <div class="notifications">
                 <button class="notif-btn" onclick="toggleNotifications()">
                     <img src="{% static 'icons/bell.svg' %}" alt="Notificaciones" class="notif-icon" id="notif-icon">
-                    <span class="notif-count" id="notif-count">3</span>
+                    <span class="notif-count" id="notif-count">4</span>
                 </button>
             
                 <div class="notif-dropdown" id="notif-dropdown">
@@ -30,6 +30,17 @@
             </div>
         </div>
     </header>
+
+    <div class="flash-container">
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="alert {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
     <!-- Sidebar izquierda -->
     <div class="main-container">    
         {% load static actives %}
@@ -80,7 +91,8 @@
                         class="{% active 'visualizar_local' %}">  Ver Local </a>
                 </div>
             </div> 
-            <a href="#"> Configuración </a>
+            <a href="{% url 'configuracion:configuracion_sistema' %}"
+                class="{% active 'configuracion_sistema' %}"> Configuración </a>
         </aside>
 
         <!-- Contenido dinamico -->

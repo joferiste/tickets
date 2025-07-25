@@ -1,0 +1,87 @@
+{% extends "core/base.html" %}
+
+{% load static %}
+
+{% block title %} Configuración {% endblock %}
+
+{% block page_title %} Configuración general {% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'configuracion/css/design_configuration.css' %}">
+<script src="{% static 'configuracion/js/scripts_configuration.js' %}"></script>
+
+<div class="config-container">
+
+    <h2>⚙ Configuración del Sistema</h2>
+    <form method="POST" class="config-form">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label>Mora (%)</label>
+            <select name="mora_porcentaje" required>
+                <option value="">-- Selecciona --</option>
+                {% for mora in mora_porcentaje_opciones %}
+                    <option value="{{ mora }}"{% if config and config.mora_porcentaje == mora %}selected{% endif %}> {{ mora }}%</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Días sin recargo</label>
+            <select name="dias_sin_recargo" required>
+                <option value="">-- Selecciona --</option>
+                {% for dias in dias_sin_recargo_opciones %}
+                    <option value="{{ dias }}"{% if config and config.dias_sin_recargo == dias %}selected{% endif %} > {{ dias }} días </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Banco Principal</label>
+            <select name="banco_principal" required>
+                <option value="">-- Selecciona un banco --</option>
+                {% for banco in bancos %}
+                    <option value="{{ banco.id }}" {% if config and config.banco_principal.id == banco.id %}selected{% endif %}>{{ banco.nombre }} - {{ banco.numero_cuenta }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="order-btn">
+            <button type="submit" class="btn-primary">Guardar</button>
+        </div>
+    </form>
+
+</div>
+
+<!-- Botón flotante Banco -->
+    <button id="open-modal-btn" class="floating-add-btn" title="Agregar Banco">+</button>
+
+    <!-- Modal emergente -->
+    <div id="banco-modal" class="banco-modal hidden">
+        <form id="form-banco" method="POST" >
+            {% csrf_token %}
+            <h3 class="modal-title"> Nuevo Banco </h3>
+            <div class="form-group-modal">
+                <label for="{{ banco_form.nombre.id_for_label }}"> {{ banco_form.nombre.label }} </label>
+                {{ banco_form.nombre }}
+                {% if banco_form.nombre.errors %}
+                    <div class="error"> {{ banco_form.nombre.errors }}</div>
+                {% endif %}
+                <label for="{{ banco_form.numero_cuenta.id_for_label }}"> {{ banco_form.numero_cuenta.label }} </label>
+                {{ banco_form.numero_cuenta }}
+                {% if banco_form.numero_cuenta.errors %}
+                    <div class="error"> {{ banco_form.numero_cuenta.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn-animated"> Guardar </button>
+                <button type="button" id="cancel-modal-btn" class="btn-animated cancel"> Cancelar </button> 
+            </div>
+        </form>
+    </div>
+
+<!--Boton fuera del contenedor-->
+<a href="{% url 'configuracion:mantenimientos' %}" class="maintenance-button-fixed">
+    🛠️ Mantenimiento de elementos del sistema
+</a>
+
+{% endblock %}

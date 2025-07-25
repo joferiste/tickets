@@ -1,0 +1,71 @@
+<!-- administracion/templates/administracion/boleta_detalle.html -->
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %} Detalle del Correo {% endblock %}
+
+{% block page_title %} Detalle del Correo {% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{% static 'administracion/css/boleta_detalle_style.css' %}">
+<script src=" {% static 'administracion/js/boleta_detalle.js' %}"></script>
+
+<div class="boleta_detalle_container">
+    <div class="info-section">
+        <h2>Detalle del Mensaje</h2>
+        <table class="info-table">
+            <tr><th>Remitente</th><td>{{ boleta.remitente }}</td></tr>
+            <tr><th>Asunto</th><td>{{ boleta.asunto }}</td></tr>
+            <tr><th>Fecha</th><td>{{ boleta.fecha_recepcion }}</td></tr>
+            <tr><th>Negocio Detectado</th>
+                <td>{% if boleta.metadata.negocio %}{{ boleta.metadata.negocio }}{% else %}<em>No Detectado</em>{% endif %}</td>
+            </tr>
+            <tr><th>Mensaje</th><td>{{ boleta.mensaje }}</td></tr>
+            <tr><th>Estado validación</th><td>{{ boleta.estado_validacion }}</li>
+            <tr><th>Motivo</th><td>{{ boleta.comentarios_validacion }}</li>
+        </table>
+
+    <div class="acciones">
+        <a href="{% url 'administracion:boletas_sandbox' %}" class="btn-secondary">← Regresar</a>
+        <a href="#" class="btn-primary">✔ Confirmar</a>
+    </div>
+    </div>
+
+    <div class="image-section">
+        <h2> Boleta </h2>
+        {% if boleta.imagen %}
+                <img src="{{ boleta.imagen.url }}" alt="Boleta" class="detalle-img">
+        {% else %}
+            <p class="no-img">Sin imagen adjunta</p> 
+        {% endif %} 
+            <button id="OpenImageModal" class="btn-primary emp-btn"> [+ Ver imagen] </button>
+    </div>
+
+    <!--Modal para visor de imagen-->
+    <div id="imagenModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+
+            <!--Imagen a visualizar -->
+            <div class="image-container">
+                <img id="boletaImage" src="{{ boleta.imagen.url }}" alt="Boleta" />
+            </div>
+
+            <!-- Controles -->
+            <div class="controls">
+                <button class="control-btn" id="rotateLeft"> ⟲ Rotar Izquierda </button>
+                <button class="control-btn" id="rotateRight"> ⟳ Rotar Derecha </button>
+                <button class="control-btn" id="zoomIn"> 🔍 Acercar </button>
+                <button class="control-btn" id="zoomOut"> 🔎 Alejar </button>
+                <button class="control-btn" id="resetImage">↺ Restaurar </button>
+            </div>
+        </div>
+    </div>
+                
+        
+
+</div>
+
+
+{% endblock %}

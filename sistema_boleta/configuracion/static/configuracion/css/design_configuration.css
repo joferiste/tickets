@@ -1,0 +1,306 @@
+.config-container {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 10px;
+    max-width: 450px;
+    margin-top: 100px;
+    margin-left: 650px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.config-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.6rem;
+}
+
+.config-form .form-group {
+    margin-bottom: 1.2rem;
+}
+
+.config-form label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.2rem;
+}
+
+.config-form select {
+    width: 100%;
+    padding: 0.4rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.flash-container {
+    min-height: 55px;  /* evita que el contenido "salte" cuando se ocultan los mensajes */
+    z-index: 100;
+    transition: all 0.3s ease;
+}
+
+.messages {
+    margin: 0 auto;
+    max-width: 340px;
+    padding: 0 1rem;
+    margin-top: 12px;
+}
+
+.alert {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.alert.hide {
+    opacity: 0;
+    transform: translateY(-10px);
+}
+
+.alert.success { 
+    background: #3926cd; 
+    color: #fff;
+}
+.alert.error {
+    background: #721c24; 
+    color: #fff;
+}
+
+.order-btn {
+    padding-top: 10px;
+    display: flex;
+    justify-content: right;
+}
+
+.btn-primary {
+    padding: 0.6rem 1.2rem;
+    background: #2c3e50;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s, transform 0.3s ease;
+}
+.btn-primary:hover {
+    background: #34495e;
+    transform: scale(1.04);
+}
+
+.maintenance-button-fixed {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background-color: #007BFF;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    text-decoration: none;
+    transition: background-color 0.3s, transform 0.3s ease;
+    z-index: 9;
+}
+
+.maintenance-button-fixed:hover {
+    background-color: #0056b3;
+    transform: scale(1.02);
+}
+
+
+/* ================ Botón flotante ================= */
+.floating-add-btn{
+    position: absolute;
+    top: 140px;
+    right: 5%;
+    z-index: 2000;
+    background-color: #0984e3;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease-in-out, transform 0.3s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.8s ease-in-out;
+}
+
+.floating-add-btn.active {
+    transform: rotate(135deg);
+    background: #da2424;
+}
+
+.floating-add-btn.active:hover {
+    transform: rotate(135deg);
+    background: #da2424;
+    background-color: #e17777;
+}
+.floating-add-btn:hover{
+    background-color: #54a6f9;
+    transform: scale(1.1);
+}
+
+/* Modal y transicion */
+.banco-modal {
+    position: absolute;
+    top: 150px;
+    right: 7%;
+    background: #fff;
+    padding: 1.2rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    width: 300px;
+    opacity: 0;
+    transform: scale(0.5);
+    transform-origin: top right;
+    transition: all 0.4s ease;
+    z-index: 1100;
+}
+
+.banco-modal.show {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Titulo de modal */
+.modal-title {
+    margin-bottom: 0.4rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #2d3436;
+    border-bottom: 1px solid #dfe6e9;
+    padding-bottom: 0.2rem;
+}
+
+/* Input agrupado */
+.form-group-modal {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group-modal label {
+    margin-top: 0.4rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+    margin-bottom: 0.2rem;
+    color: #2d3436;
+}
+
+.form-group-modal input {
+    padding: 0.3rem;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.form-group-modal select {
+    padding: 0.3rem;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.form-group-modal input:focus {
+    border-color: #0984e3;
+    outline: none;
+    box-shadow: 0 0 4px rgba(9, 132, 227, 0.4);
+}
+
+
+.modal-actions {
+    display: flex;
+    gap: 5px;
+    justify-content: flex-end;
+}
+
+.btn-animated{
+    background-color: #0984e3;
+    margin-top: 15px;
+    color: #fff;
+    padding: 0.7rem 1.4rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    width: 100%;
+}
+
+.btn-animated:hover{
+    background-color: #74b9ff;
+    transform: scale(1.03);
+}
+
+.btn-animated.cancel {
+    background-color:  #834b0b;
+    color: #f2f4f5;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.btn-animated.cancel:hover {
+    background-color: #a97d7c;
+    transform: scale(1.03);
+}
+
+.hidden {
+    display: none !important;
+}
+
+
+.message-container{
+    margin: 1rem auto;
+    text-align: center;
+}
+
+.alert{
+    background-color: #dcede0;
+    color: #155724;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+
+/* alerta mensajes emergentes */
+.alerta{
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #eee;
+    padding: 10px 20px;
+    border-radius: 10px;
+    opacity: 0;
+    transition: all 0.5s ease;
+    z-index: 9999;
+}
+
+.alerta.visible {
+    opacity: 1;
+}
+
+.alerta-info{
+    background: #4b3bfc;
+    color: #ffffff;
+}
+
+.alerta-error{
+    background: #a10000;
+    color: #ffffff;
+}
+
+.config-container {
+    transition: transform 0.4s ease;
+} 
+
+/* Mover un poco el formulario al abrir el modal */
+.config-container.push-left {
+    transform: translateX(-55px);
+    transition: transform 0.3s ease-in;
+}

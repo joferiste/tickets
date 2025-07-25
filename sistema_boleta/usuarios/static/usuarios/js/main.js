@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", function(){
     }, {
         threshold: 0.1
     });
-
+ 
     rows.forEach(row => {
         observer.observe(row);
     });
@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", function(){
             mainForm.classList.add("push-left");
         } else {
             mainForm.classList.remove("push-left");
-            form.reset();
+            form.reset(); 
         }
     }); 
 

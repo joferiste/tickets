@@ -321,7 +321,7 @@
     z-index: 5;
 }
 
-/* Estilo de celdas */
+/* Estilo de celdas */ 
 .tabla-usuarios th,
 .tabla-usuarios td {
     padding: 0.75rem;

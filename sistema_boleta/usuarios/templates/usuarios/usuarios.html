@@ -13,13 +13,15 @@
 <div class="main-content">
     <div class="main-usuario">
         <p class="form-description"> Formulario para la creación de nuevos usuarios </p>
+
         {% if messages %}
             <div class="message-container">
                 {% for message in messages %}
-                    <div class="alert"> {{ message }} </div>
+                    <div class="alert" {{ message.tags }}> {{ message }} </div>
                 {% endfor %}
             </div>
         {% endif %}
+
         <div class="form-wrapper">
             <form method="POST" class="styled-form">
                 {% csrf_token %}
