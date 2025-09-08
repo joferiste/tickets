@@ -28,15 +28,6 @@ class Recibo(models.Model):
     def __str__(self):
         return self.nombre
 
-     
-    def save(self, *args, **kwargs):
-        if not self.nombre:
-            self.nombre = f"Recibo-{self.transaccion.negocio.nombre}_{self.transaccion.boleta.numeroBoleta}"
-        if not self.email:
-            self.emailAsociado = self.transaccion.boleta.email
-        super().save(*args, **kwargs)
-
-
     class Meta:
         verbose_name = 'Recibo'
         verbose_name_plural = 'Recibos'

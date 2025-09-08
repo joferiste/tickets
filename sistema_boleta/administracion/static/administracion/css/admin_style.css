@@ -139,3 +139,47 @@
     color: #721c24;
     border: 1px solid #f5c6cb;
 }
+
+/* Diseño mensaje emergente */
+
+.flash-container {
+    z-index: 500;
+    position: fixed;
+    left: 50%;
+    top: 4px;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 340px;
+    padding: 0 1.2rem;
+    pointer-events: none;
+}
+
+.messages {
+    pointer-events: auto;
+}
+
+.alert { 
+    padding: 10px 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    font-weight: 500;
+    font-size: 0.95rem;
+    margin-top: 8px;
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.alert.hide {
+    opacity: 0;
+    transform: translateY(-10px);
+}
+
+.alert.success { 
+    background: #4331c9; 
+    color: #fff;
+}
+.alert.error {
+    background: #721c24; 
+    color: #fff;
+}

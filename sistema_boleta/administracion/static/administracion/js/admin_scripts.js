@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('btn-revisar-correos');
     const mensajeDiv = document.getElementById('mensaje-correos');
     const tablaBody = document.getElementById('tabla-boletas-body');
+    const alerts = document.querySelectorAll('.alert');
 
     btn.addEventListener('click', () => {
         fetch('/administracion/revisar/', {
@@ -48,6 +49,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return cookieValue;
     }
+
+    alerts.forEach(function (alert){
+        setTimeout(function () {
+        alert.classList.add("hide");
+        setTimeout(() => alert.style.display = "none", 600); 
+        }, 4000);
+    });
 });
 
 window.addEventListener("pageshow", function (event) {

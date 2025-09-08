@@ -1,0 +1,228 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load boletas_extras %}
+
+{% block title %} Administración de boleta {% endblock %}
+
+{% block page_title %} Ingreso de boleta {% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'administracion/css/boleta_style.css' %}">
+<script src="{% static 'administracion/js/boleta_scripts.js' %}"> </script>
+
+<div class="boleta-container">
+    <div class="info-section-data">
+    <!-- 🔹 Sección de datos del cliente -->
+    <div class="info-section">
+        <h3>Datos obtenidos desde la relación correo - cliente</h3>
+        <div class="info-grid">
+            <div class="info-item"><strong>Negocio:</strong> {{ negocio.nombre }}</div>
+            <div class="info-item"><strong>Responsable:</strong> {{ usuario }}</div>
+            <div class="info-item"><strong>Local(es) arrendado(s):</strong> {{ nombre_local }}</div>
+            
+            <!-- ✅ CUOTA ORIGINAL (siempre se muestra) -->
+            <div class="info-item">
+                <strong>Cuota mensual (Contrato):</strong> 
+                <span class="monto-base">Q.{{ contexto_cuota.cuota_original|formato_q }}</span>
+            </div>
+            
+            <!-- ✅ MOSTRAR FALTANTE EXISTENTE -->
+            {% if contexto_cuota and contexto_cuota.tiene_faltante_previo %}
+                <div class="info-item faltante-previo">
+                    <strong>⚠️ Pago pendiente de completar:</strong>
+                    <div class="faltante-detalle-completo">
+                        <div><strong>Período:</strong> {{ contexto_cuota.periodo_pendiente|periodo_legible }}</div>
+                        <div><strong>Monto ya pagado:</strong> Q.{{ contexto_cuota.monto_ya_pagado|formato_q }}</div>
+                        <div><strong>Faltante por pagar:</strong> <span class="monto-faltante">Q.{{ contexto_cuota.faltante_previo|formato_q }}</span></div>
+                        <div><strong>Total requerido:</strong> Q.{{ contexto_cuota.monto_total_requerido|formato_q }}</div>
+                        <small class="transaccion-ref">Transacción #{{ contexto_cuota.transaccion_pendiente.idTransaccion }}</small>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- ✅ CONTEXTO DE MORA (solo si NO hay faltante previo) -->
+            {% if contexto_cuota and contexto_cuota.tiene_ajustes and not contexto_cuota.tiene_faltante_previo %}
+                <div class="info-item contexto-especial">
+                    <strong>Cuota mensual (Ajustada):</strong>
+                    <span class="monto-ajustado">Q.{{ contexto_cuota.cuota_ajustada|formato_q }}</span>
+                    <small class="contexto-detalle">
+                        (+Q.{{ contexto_cuota.diferencia|formato_q }} por {{ contexto_cuota.tipo }})
+                    </small>
+                </div>
+                
+                {% if contexto_cuota.mensaje_contexto %}
+                    <div class="info-item contexto-mensaje">
+                        <span class="contexto-info">ℹ️ {{ contexto_cuota.mensaje_contexto }}</span>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 🔹 Panel administrativo -->
+    {% if contexto_cuota and contexto_cuota.tiene_ajustes or contexto_cuota.tiene_faltante_previo %}
+    <div class="panel-contexto-admin">
+        <h4>📋 Contexto para el Administrador</h4>
+        <div class="contexto-resumen">
+            
+            {% if contexto_cuota.tiene_ajustes %}
+                <div class="contexto-item tipo-{{ contexto_cuota.tipo }}">
+                    <strong>Situación actual:</strong> 
+                    Esta boleta corresponde a un período que tiene recargo por mora.
+                    <br>
+                    <strong>Período objetivo:</strong> {{ contexto_cuota.periodo_objetivo|periodo_legible }}
+                    <br>
+                    <strong>Monto esperado:</strong> Q.{{ contexto_cuota.cuota_ajustada|formato_q }}
+                </div>
+            {% endif %}
+            
+            {% if contexto_cuota.tiene_faltante_previo %}
+                <div class="contexto-item tipo-faltante">
+                    <strong>Pago pendiente:</strong> 
+                    Existe una transacción incompleta que requiere complemento.
+                    <br>
+                    <strong>Faltante:</strong> Q.{{ contexto_cuota.faltante_previo|formato_q }}
+                    <br>
+                    <strong>Recomendación:</strong> Verificar si esta boleta es un complemento del pago anterior.
+                </div>
+            {% endif %}   
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 🔹 Botón regresar -->
+    <div class="area-btn">
+        <a href="{% url 'administracion:boleta_detalle' boleta.id %}" class="btn btn-primary">Regresar</a>
+    </div>
+</div>
+    <div class="image-section"> 
+        {% if boleta.imagen %}
+            <img src="{{ boleta.imagen.url }}" alt="Boleta" class="detalle-img">
+        {% else %}
+            <em>No hay imagen disponible</em>
+        {% endif %}
+        <div class="area-btn">
+            <button class="btn-confirmar" onclick="openModal('modal-{{ boleta.id }}')">Completar datos desde imagen </button>
+        </div>
+    </div>       
+</div>
+
+    <!-- Modal -->
+<div id="boletaModal" class="modal hidden">
+    <div class="modal-inner"> 
+    <!-- Imagen y controles -->
+        <div class="modal-image">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div class="image-wrapper">
+                <img id="modalImage" src="{{ boleta.imagen.url }}" alt="Boleta" />
+            </div>
+            <div class="controls">
+                <button onclick="rotateLeft()">⟲ Rotar</button>
+                <button onclick="rotateRight()">⟳ Rotar</button>
+                <button onclick="zoomIn()"> + Acercar</button>
+                <button onclick="zoomOut()"> - Alejar</button>
+                <button onclick="resetImage()">↺ Restaurar</button>
+            </div>
+        </div>
+
+        <!-- Formulario -->
+        <div class="modal-form">
+            <h2>Procesar Boleta</h2>
+            <form id="procesarBoletaForm"method="POST" action="{% url 'administracion:procesar_boleta' boleta.id %}">
+                {% csrf_token %}
+                {{ form.as_p}}
+
+            <label>Banco y número de cuenta</label>
+                <select name="banco" required>
+                <option value="">-- Selecciona --</option>
+                    {% for banco in bancos %}
+                        <option value="{{ banco.id }}">{{ banco.nombre }} - {{ banco.numero_cuenta }}</option>
+                    {% endfor %}
+                </select>
+
+                <label>Número de Boleta</label>
+                <input type="text" name="numeroBoleta">
+
+                <label for="fechaDeposito">Fecha de depósito</label>
+                <input type="date" name="fechaDeposito" id="fechaDeposito" required>
+
+                <label>Monto</label>
+                <input type="text" name="monto" >
+
+                <label>Tipo de Pago</label>
+                <select name="tipoPago" required>
+                <option value="">-- Selecciona --</option>
+                    {% for tipo in tipos_pago %}
+                        <option value="{{ tipo.idTipoPago }}">    
+                            {{ tipo.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <div class="btn-form">
+                    <button id="btn-procesar" type="submit" class="btn-procesar">Procesar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="resultadoModal" class="modal-resultado hidden-1">
+    <div class="modal-resultado-inner">
+        <div class="modal-resultado-content">
+            <!-- modal dinamico basado en el resultado -->
+            <div id="resultado-exitoso" class="resultado-section hidden-1">
+                <div class="resultado-icon success">
+                    ✅
+                </div>
+                <h2 class="resultado-title success"> ¡Pago procesado exitosamente! </h2>
+                <div class="resultado-mensaje" id="mensaje-exitoso">
+                    <!--mensaje dinamico aqui-->
+                </div>
+                <div class="resultado-actions">
+                <button id="verTransaccionBtn" class="btn-resultado primary">
+                    Ver Transacción
+                </button>
+                <button onclick="closeResultadoModal()" class="btn-resultado secondary">
+                    Cerrar
+                </button>
+            </div>
+            </div>
+
+            <div id="resultado-pendiente" class="resultado-section hidden-1">
+                <div class="resultado-icon warning">
+                    ⚠️
+                </div>
+                <h2 class="resultado-title warning"> Pago procesado - Acción requerida</h2>
+                <div class="resultado-mensaje" id="mensaje-pendiente">
+                    <!--mensaje dinamico aqui-->
+                </div>
+                <div class="resultado-actions">
+                <button id="verTransaccionBtn" class="btn-resultado primary">
+                    Ver Transacción
+                </button>
+                <button onclick="closeResultadoModal()" class="btn-resultado secondary">
+                    Cerrar
+                </button>
+            </div>
+            </div>
+
+            <div id="resultado-error" class="resultado-section hidden-1">
+                <div class="resultado-icon error">
+                    ❌
+                </div>
+                <h2 class="resultado-title error"> Error en el procesamiento</h2>
+                <div class="resultado-mensaje" id="mensaje-error">
+                    <!--mensaje dinamico aqui-->
+                </div>
+                <div class="resultado-actions">
+                    <a href="{% url 'administracion:boletas_sandbox' %}" class="btn-resultado primary">
+                    Volver a la bandeja de entrada
+                    </a>
+                </div>
+            </div>
+
+            
+        </div>
+    </div>
+</div>
+{% endblock %}

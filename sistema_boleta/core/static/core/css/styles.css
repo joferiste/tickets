@@ -434,7 +434,7 @@ header{
 }
 
 .responsably-name{
-    font-size: 14px;
+    font-size: 14px; 
     color: #4a3f39;    
 }
 
@@ -453,34 +453,16 @@ header{
     transform: translateX(1px);
 }
 
-.icon-box{
-    background-color: #4a3f3f;
-    border-radius: 8px;
-    padding: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 42px;
-    height: 42px;
-    flex-shrink: 0;
-}
-
-.icon-box img{
-    width: 22px;
-    height: 22px;
-    filter: invert(1);
-}
-
 .business-name{
-    border-radius: 10px;
+    border-radius: 16px;
     padding: 10px;
-    margin-bottom: 6px;
+    margin-bottom: 2px;
     transition: transform 0.2s ease;
 }
 
 .business-name:hover{
-    transform: translateY(-3px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2.5px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.10);
 }
 
 

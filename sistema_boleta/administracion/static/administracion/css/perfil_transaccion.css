@@ -1,0 +1,42 @@
+.container {
+    margin-left: 270px;
+    margin-top: 60px;
+    padding: 20px;
+}
+/* Titulo fijo en la parte superior del container */
+.container > h1 {
+    font-size: 2rem;
+    margin-bottom: 15px;
+    font-weight: 600;
+    text-align: left;
+}
+
+/* grid para tarjetas complemetarias */
+.tarjetas-complementarias {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    margin-top: 6px;
+    gap: 6px;
+}
+
+/* Tarjetas */
+.container section {
+    border-radius: 20px;
+    padding: 22px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.container section h2 {
+    font-size: 1.2rem;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+/* Colores distintos para cada tarjeta */
+.tarjeta-naranja { background-color: #fb8c6a; color: white; }   /* naranja/llamativo */
+.tarjeta-azul { background-color: #2799f6; color: white; }       /* azul */
+.tarjeta-roja {  background-color: #f12617; color: white;}       /* rojo */
+ /* amarillo con texto negro */
+.tarjeta-verde { background-color: #47a34a; border: 3px solid #841616; color: white;}      /* verde */
+.tarjeta-amarilla { background-color: rgb(226, 226, 53); color: black; }

@@ -40,6 +40,7 @@ def configuracion_sistema(request):
                     activo = True
                 )
                 messages.success(request, "Configuración creada y activada")
+                
         return redirect("configuracion:configuracion_sistema")
     return render(request, "configuracion/configuracion_sistema.html", {
         "config": config,

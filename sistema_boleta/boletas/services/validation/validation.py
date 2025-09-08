@@ -10,8 +10,8 @@ from negocios.models import Negocio
 import bleach
 import gc
 from .image_utils import process_and_sanitize_image
-from .security_utils import sanitize_text
-from .hash_utils import calculate_file_hash, is_duplicate_in_sandbox
+from .security_utils import sanitize_text, is_duplicate_message, is_recent_duplicate
+from .hash_utils import calculate_file_hash, is_duplicate_hash
 
 def validar_boleta_sandbox(boleta_sandbox) -> bool:
     """
@@ -56,6 +56,13 @@ def validar_boleta_sandbox(boleta_sandbox) -> bool:
             ruta_original = boleta_sandbox.imagen.path # Se usa path
             print(f"[INFO] Procesando imagen: {ruta_original}")
 
+            # ====== Guardar info original antes de sanitizar =======
+            original_filename = os.path.basename(ruta_original)
+            original_hash = calculate_file_hash(boleta_sandbox.imagen)
+            metadata["original_filename"] = original_filename
+            metadata["original_hash"] = original_hash
+            print(f"[INFO] Original -> filename={original_filename}, hash={original_hash}")
+
             #3 Procesar imagen y generar version segura
             safe_image_bytes, safe_name = process_and_sanitize_image(boleta_sandbox.imagen.file)
             print(f"[INFO] Imagen procesada. Nuevo nombre: ", safe_name)
@@ -88,17 +95,15 @@ def validar_boleta_sandbox(boleta_sandbox) -> bool:
             print(f"Nombre del archivo: {boleta_sandbox.imagen.name}")
             print(f"[INFO] Ruta final: {boleta_sandbox.imagen.path}")
             
-
-
             #3.3 Calcular el hash sobre version segura
             file_hash = calculate_file_hash(boleta_sandbox.imagen)
+            metadata["safe_filename"] = boleta_sandbox.imagen.name
+            metadata["safe_hash"] = file_hash
 
-            #3.4 Validar duplicado 
-            if is_duplicate_in_sandbox(file_hash, current_id=boleta_sandbox.id):
-                errors.append("Archivo duplicado. Ya existe en el sandbox")
+            #Insertamos en base de datos
+            boleta_sandbox.hash_image = file_hash
+            print(f"[INFO] Seguro -> filename={boleta_sandbox.imagen.name}, hash={file_hash}")
 
-            metadata["hash"] = file_hash
-        
         except Exception as e:
             errors.append(f"Error procesando la imagen {str(e)}")
 
@@ -108,15 +113,28 @@ def validar_boleta_sandbox(boleta_sandbox) -> bool:
         print("[INFO] Correo sin mensaje, solo imagen.")
 
 
+    # 5. Validar duplicado por message_id
+    if boleta_sandbox.message_id and is_duplicate_message(boleta_sandbox.message_id, current_id=boleta_sandbox.id):
+        errors.append("Correo duplicado. Este mensaje ya fue procesado.")
+
+    # 6. Validar duplicado por hash_image
+    if file_hash and is_duplicate_hash(file_hash, current_id=boleta_sandbox.id):
+        errors.append("Archivo duplicado. Ya existe una boleta con esta imagen")
+
+    # 7. Validar envio reciente (para evitar spam en corto tiempo)
+    if is_recent_duplicate(boleta_sandbox.remitente, file_hash, minutes=10):
+        errors.append("Posible duplicado: misma imagen enviada en menos de 10 minutos.")
+
+
     # Resultado de validacion
     if errors:
-        boleta_sandbox.estado_validacion = "Rechazada"
+        boleta_sandbox.estado_validacion = "rechazada"
         boleta_sandbox.comentarios_validacion = "; ".join(errors)
         boleta_sandbox.motivo_rechazo = "; ".join(errors)
         boleta_sandbox.es_valida = False
         print(f"[WARN] Validación rechazada: {errors}")
     else:
-        boleta_sandbox.estado_validacion = "Exitosa"
+        boleta_sandbox.estado_validacion = "exitosa"
         boleta_sandbox.comentarios_validacion = "Validación técnica exitosa."
         boleta_sandbox.es_valida = True
         print("[INFO] Validación exitosa.")

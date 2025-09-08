@@ -14,7 +14,7 @@ class Banco(models.Model):
                 fields=["nombre", "numero_cuenta"],
                 name="unique_nombre_numero_cuenta"
             )
-        ]
+        ] 
 
         verbose_name = "Banco"
         verbose_name_plural = "Bancos"

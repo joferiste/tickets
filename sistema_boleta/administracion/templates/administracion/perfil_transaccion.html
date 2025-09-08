@@ -1,0 +1,75 @@
+<!-- administracion/templates/administracion/perfil_transaccion.html -->
+{% extends "core/base.html" %}
+{% load static %}
+
+{% load boletas_extras %}
+
+
+{% block title %} Detalle de transacción {% endblock %}
+
+{% block page_title %} Detalle de transacción {% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{% static 'administracion/css/perfil_transaccion.css' %}">
+<script src=" {% static 'administracion/js/perfil_transaccion.js' %}"></script>
+
+<div class="container">
+    <h1>Perfil de Transacción: {{ transaccion.nombre }}</h1>
+
+    <section class="tarjeta-azul">
+        <h2>Datos de la Transacción</h2>
+        <ul>
+            <p>Estado: {{ transaccion.get_estado_display }}</p>
+            <p>Ingreso al sistema: {{ transaccion.fecha_ingreso_sistema }}</p>
+            <p>Transacción generada: {{ transaccion.fechaTransaccion }}</p>
+            <p>Última actualización: {{ transaccion.ultima_actualizacion }}</p>
+            <p>Período pagado: {{ transaccion.periodo_pagado }}</p>
+            <p>Método de pago: {{ boleta.tipoPago }}</p>
+            <p>Comentarios: </p>        
+            <ul>
+                {% for c in transaccion.comentario.splitlines %}
+                    {{ c }} 
+                {% endfor %}    
+            </ul>
+        </ul>
+    </section>
+
+    <!--Contenedor de tarjetas complementarias-->
+    <div class="tarjetas-complementarias">
+        <section class="tarjeta-roja">
+            <h2>Negocio y Locales</h2>
+            <p>Negocio: {{ negocio.nombre }}</p>
+            <p>Local(es): </p>
+            <p>
+                {% for local in locales %}
+                    <p>{{ local.nombre }} - Costo: {{ local.nivel.costo|floatformat:".2f" }}</p>
+                {% endfor %}
+            </p>
+            <p>Total base: {{ costo_locales|floatformat:".2f" }}</p>
+        </section>
+
+        {% if not ocultar_mora %}
+            <section class="tarjeta-amarilla">
+                <h2>Excedentes y Faltantes</h2>
+                <p>Excedente: {{ transaccion.excedente|formato_q }}</p>
+                <p>Faltante: {{ transaccion.faltante|formato_q }}</p>
+            </section>
+            
+            <section class="tarjeta-naranja">
+                <h2>Mora y Plazos</h2>
+                <p>Días de mora: {{ transaccion.dias_retraso }}</p>
+                <p>Monto mora: {{ transaccion.mora_monto|formato_q }}</p>
+                <p>Confirmación estimada: {{ transaccion.fecha_limite_confirmacion }}</p>
+            </section>
+        {% endif %}
+
+        <!--Bloque de cierre-->
+        <section class="tarjeta-verde">
+            <h2> Resumen de pago </h2>
+            <p>{{ mensaje_final|linebreaksbr }}</p>
+        </section>
+    </div>
+</div>
+
+{% endblock %}

@@ -4,6 +4,7 @@ from django.core.validators import MinValueValidator
 from negocios.models import Negocio
 from decimal import Decimal
 from django.utils import timezone
+from django.db.models import Q, UniqueConstraint
 
 
 class Ubicacion(models.Model):
@@ -53,7 +54,7 @@ class Local(models.Model):
         return self.nivel.ubicacion
     
     class Meta:
-        verbose_name = "Local"
+        verbose_name = "Local" 
         verbose_name_plural = "Locales"
         ordering = ['-fechaCreacion'] 
 
@@ -71,6 +72,13 @@ class OcupacionLocal(models.Model):
         return f"{self.local.nombre} - {self.negocio.nombre} ({self.fecha_inicio} a {self.fecha_fin or 'Actual'})"
     
     class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=['local', 'negocio'],
+                condition=Q(fecha_fin__isnull=True),
+                name='uniq_ocupacion_activa_por_local_y_negocio',
+            ),
+        ]
         verbose_name = "OcupacionLocal"
         verbose_name_plural = "OcupacionLocales"
         ordering = ['-idOcupacion'] 

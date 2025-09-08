@@ -4,4 +4,4 @@ from .models import Boleta, TipoPago, EstadoBoleta, BoletaSandbox
 admin.site.register(Boleta)
 admin.site.register(TipoPago)
 admin.site.register(EstadoBoleta)
-admin.site.register(BoletaSandbox)
+admin.site.register(BoletaSandbox) 

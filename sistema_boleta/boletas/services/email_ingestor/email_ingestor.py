@@ -69,6 +69,7 @@ def procesar_correos():
             remitente=remitente,
             asunto=asunto,
             mensaje=cuerpo.strip(),
+            message_id=msg.get("Message-ID"), 
         )
 
         if archivo:

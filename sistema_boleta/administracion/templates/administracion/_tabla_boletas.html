@@ -4,11 +4,8 @@
     <td class="remitente">{{ boleta.remitente }}</td>
     <td class="asunto">{{ boleta.asunto|default:"(sin asunto)" }}</td>
     <td class="fecha">{{ boleta.fecha_recepcion|date:"d/m/Y H:i" }}</td>
-    <td class="estado">{% if boleta.es_valida %}
-            Válido
-        {% else %}
-            No Válido
-        {% endif %}</td>
+    <td class="estado">{{ boleta.get_estado_validacion_display }} </td>
+         
     
     <td class="negocio">
         {% if boleta.metadata.negocio %}
@@ -17,10 +14,17 @@
             <em>No detectado</em>
         {% endif %}
     </td>
-    <td class="accion">
-        <a href="{% url 'administracion:boleta_detalle' boleta.id %}" class="btn-small"> Ver</a>
-    </td>
+    
+    {% if boleta.estado_validacion == "procesada" %}
+        <td class="accion">
+            Boleta Procesada
+        </td>
+    {% else %}
+        <td class="accion">
+            <a href="{% url 'administracion:boleta_detalle' boleta.id %}" class="btn-small"> Ver</a>
+        </td>
+    {% endif %}
 </tr>
 {% empty %}
-<tr><td colspan="6">No hay boletas en el sandbox todavía.</td></tr>
+<tr>No hay boletas en el sandbox todavía.</tr>
 {% endfor %}

@@ -10,25 +10,28 @@
 <link rel="stylesheet" href="{% static 'negocios/css/perfiles_negocios.css' %}">
 
 <div class="main-content">
-    <div class="perfil-container">
+    <div class="perfil-container"> 
 
         <div class="perfil-header">
             <h1> {{ negocio.nombre }}</h1>
             <p><strong>Encargado:</strong> {{ negocio.usuario.nombre }}</p>
+            {% for ocupacion in ocupaciones %}
+                <p><strong>Local Asignado:</strong> {{ ocupacion.local.nombre }}</p>
+            {% endfor %}
             <p><strong>Correo:</strong> {{ negocio.email }}</p>
             <p><strong>Teléfono:</strong> {{ negocio.telefono1 }}</p>
             <p><strong>NIT:</strong> {{ negocio.nit|default_if_none:"No Ingresado" }}</p>
             <p><strong>Estado:</strong> {{ negocio.estado.nombre }}</p>
+
         </div>
 
         <div class="perfil-section">
-            <h2>📄 Boletas Recibidas</h2>
+            <h2>Boletas Recibidas</h2>
             <ul>
-                {% for boleta in boletas %}
+                {% for boleta in sandbox %}
                     <li>
-                        {{ boleta.fechaIngreso|date:"d/m/Y H:i" }} - 
-                        Q{{ boleta.monto }} - 
-                        <a href="{{ boleta.imagen.url }}" target="_blank">Ver boleta</a>
+                        <strong>{{ boleta.fecha_recepcion|date:"d/m/Y H:i" }}</strong> - 
+                        <a href="{{ boleta.imagen.url }}" target="_blank">Ver boleta</a>                        
                     </li>
                 {% empty %}
                     <li>No hay boletas registradas.</li>
@@ -37,14 +40,16 @@
         </div>
 
         <div class="perfil-section">
-            <h2>📊 Transacciones</h2>
+            <h2> Transacciones</h2>
             <ul>
                 {% for transaccion in transacciones %}
+                <a href="{% url 'administracion:perfil_transaccion' transaccion.idTransaccion %}">
                     <li>
-                        {{ transaccion.fechaTransaccion|date:"d/m/Y H:i" }} -
-                        Estado: {{ transaccion.estado.nombre }} -
+                        <strong>{{ transaccion.fechaTransaccion|date:"d/m/Y H:i" }}</strong><br>
+                        Estado: {{ transaccion.get_estado_display }} <br>
                         Comentario: {{ transaccion.comentario|default:"Sin comentario" }}
                     </li>
+                </a>
                 {% empty %}
                     <li>No hay transacciones aún.</li>
                 {% endfor %}
@@ -52,7 +57,7 @@
         </div>
 
         <div class="perfil-section">
-            <h2>🧾 Recibos Generados</h2>
+            <h2> Recibos Generados</h2>
             <ul>
                 {% for recibo in recibos %}
                     <li>

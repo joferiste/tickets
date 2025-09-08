@@ -1,7 +1,5 @@
 from django.contrib import admin
-from transacciones.models import Transaccion, EstadoTransaccion
+from .models import Transaccion
 
 
 admin.site.register(Transaccion)
-admin.site.register(EstadoTransaccion)
-

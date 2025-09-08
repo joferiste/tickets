@@ -12,25 +12,40 @@
 <script src=" {% static 'administracion/js/boleta_detalle.js' %}"></script>
 
 <div class="boleta_detalle_container">
-    <div class="info-section">
+    <div class="info-section">  
+        <button class="info-button" onclick="openInfoModal()">¿Cómo funciona esta sección?</button>
         <h2>Detalle del Mensaje</h2>
         <table class="info-table">
             <tr><th>Remitente</th><td>{{ boleta.remitente }}</td></tr>
             <tr><th>Asunto</th><td>{{ boleta.asunto }}</td></tr>
-            <tr><th>Fecha</th><td>{{ boleta.fecha_recepcion }}</td></tr>
-            <tr><th>Negocio Detectado</th>
-                <td>{% if boleta.metadata.negocio %}{{ boleta.metadata.negocio }}{% else %}<em>No Detectado</em>{% endif %}</td>
-            </tr>
             <tr><th>Mensaje</th><td>{{ boleta.mensaje }}</td></tr>
-            <tr><th>Estado validación</th><td>{{ boleta.estado_validacion }}</li>
+            <tr><th>Fecha</th><td>{{ boleta.fecha_recepcion }}</td></tr>
+            <tr><th>Estado validación</th><td>{{ boleta.get_estado_validacion_display }}</li>
             <tr><th>Motivo</th><td>{{ boleta.comentarios_validacion }}</li>
-        </table>
+        </table> 
 
-    <div class="acciones">
-        <a href="{% url 'administracion:boletas_sandbox' %}" class="btn-secondary">← Regresar</a>
-        <a href="#" class="btn-primary">✔ Confirmar</a>
-    </div>
-    </div>
+        <div class="acciones">
+            <a href="{% url 'administracion:boletas_sandbox' %}" class="btn btn-secondary"> Regresar</a>
+            <a href="{% url 'administracion:boleta_revisar' boleta.id %}" class="btn btn-primary">Confirmar</a>
+            {% if boleta.id %}
+                {% if boleta.es_valida %}
+                    <button class="btn btn-outline-danger" 
+                            onclick="confirmarEliminacion(this)" 
+                            data-url="{% url 'administracion:eliminar_sandbox' boleta.id %}"
+                            data-mensaje="Esta boleta es válida, ¿Estás seguro de querer eliminarla?">
+                        Eliminar
+                    </button>
+                {% else %}
+                    <button class="btn btn-danger" 
+                            onclick="confirmarEliminacion(this)" 
+                            data-url="{% url 'administracion:eliminar_sandbox' boleta.id %}"
+                            data-mensaje="Eliminarás una boleta inválida">
+                        Eliminar
+                    </button>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>  
 
     <div class="image-section">
         <h2> Boleta </h2>
@@ -42,11 +57,33 @@
             <button id="OpenImageModal" class="btn-primary emp-btn"> [+ Ver imagen] </button>
     </div>
 
+    <!-- Modal de informacion -->
+        <div id="infoModal" class="info-modal">
+            <div class="info-modal-content">
+                <span class="close" onclick="closeInfoModal()">&times;</span>
+                <h2>Fases del procesamiento de boletas</h2>
+                        <strong>Fase 1 - Validación Técnica (Sandbox):</strong>
+                        <p>El sistema recibe automáticamente correos con imágenes adjuntas de boletas. En esta etapa se realiza una validación inicial del contenido, comprobando que el correo proviene de un remitente conocido y que la imagen adjunta cumple con los requisitos técnicos.</p>
+            </div>
+        </div>
+
+    <!--Modal para confirmacion de eliminacion-->
+<div id="modalConfirmacion" class="modal hidden">
+    <div class="modal-content">
+        <span class="close" onclick="cerrarModal()">&times;</span>
+        <h3 id="mensajeConfirmacion">¿Estás seguro?</h3>
+        <form id="formEliminar" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btns btn-conf-delete">Sí, eliminar</button>
+            <button type="button" class="btns btn-conf-cancel" onclick="cerrarModal()">Cancelar</button>
+        </form>
+    </div>
+</div>  
+
     <!--Modal para visor de imagen-->
-    <div id="imagenModal" class="modal hidden">
+    <div id="imagenModal" class="modal hidden">      
         <div class="modal-content">
             <span class="close" id="closeModal">&times;</span>
-
             <!--Imagen a visualizar -->
             <div class="image-container">
                 <img id="boletaImage" src="{{ boleta.imagen.url }}" alt="Boleta" />
@@ -62,10 +99,26 @@
             </div>
         </div>
     </div>
-                
-        
+    <!-- modal para bloqueo por duplicacion de procesamiento de pago -->
+    {% if boleta.estado_validacion == "procesada" %}
+        <div id="modalBlock" class="modal-block hidden">
+            <div class="modal-bloqueo">
+                <h1 class="title-grand">
+                    ESTA BOLETA YA HA SIDO PROCESADA
+                </h1>
+                <h2>
+                    Fecha y hora de procesamiento:
+                </h2>
+                <h3>
+                    {{ boleta.fecha_procesada|date:"d/m/Y H:i" }}
+                </h3>
+                <a href="{% url 'administracion:boletas_sandbox' %}" class="btn-sandbox">
+                    Volver a la bandeja de entrada
+                </a>
+            </div>
+        </div>
+    {% endif %}
+
 
 </div>
-
-
 {% endblock %}

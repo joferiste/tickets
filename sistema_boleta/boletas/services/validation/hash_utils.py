@@ -21,12 +21,14 @@ def calculate_bytes_hash(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def is_duplicate_in_sandbox(hash_value: str, current_id=None) -> bool:
+def is_duplicate_hash(hash_value: str, current_id=None) -> bool:
     """
     Verifica si ya existe un registro en el sandbox con el mismo hash.
     Ignora el ID actual para evitar falsos positivos.
     """
-    qs = BoletaSandbox.objects.filter(metadata__hash=hash_value)
+    qs = BoletaSandbox.objects.filter(hash_image=hash_value)
     if current_id:
         qs = qs.exclude(id=current_id)
     return qs.exists()
+
+

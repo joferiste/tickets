@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.generic.detail import DetailView
-from boletas.models import Boleta
+from boletas.models import Boleta, BoletaSandbox
 from transacciones.models import Transaccion
 from recibos.models import Recibo
 import json
@@ -18,7 +18,7 @@ import json
 def CreacionNegocios(request):
     if request.method == 'POST':
         form = NegocioForm(request.POST)
-        estado_form = EstadoNegocioForm()
+        estado_form = EstadoNegocioForm() 
         categoria_form = CategoriaForm()
 
         if form.is_valid():
@@ -245,7 +245,7 @@ def desasignar_local(request, ocupacion_id):
     return redirect('negocios:negocio_local')
 
 
-class PerfilNegocioView(DetailView):
+class PerfilNegocioView(DetailView): 
     model = Negocio
     template_name = 'negocios/perfil.html'
     context_object_name = 'negocio'
@@ -253,7 +253,9 @@ class PerfilNegocioView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         negocio = self.get_object()
+        context['sandbox'] = BoletaSandbox.objects.filter(metadata__negocio_id=negocio.idNegocio).order_by("fecha_recepcion")
         context['boletas'] = Boleta.objects.filter(negocio=negocio)
         context['transacciones'] = Transaccion.objects.filter(boleta__negocio=negocio)
         context['recibos'] = Recibo.objects.filter(transaccion__boleta__negocio=negocio)
-        return context  
+        context['ocupaciones'] = OcupacionLocal.objects.filter(negocio=negocio, fecha_fin__isnull=True)
+        return context
