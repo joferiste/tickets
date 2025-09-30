@@ -1,156 +1,483 @@
-.admin-container {
-    padding: 2.5rem;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    min-height: calc(100vh - 90px);
+/* Container principal del inbox */
+.inbox-container {
     margin-left: 275px;
     margin-right: 15px;
     margin-top: 80px;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    min-height: calc(100vh - 80px);
     animation: fadeIn 0.8s ease-in-out;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-19px); }
-    to   { opacity: 1; transform: translateY(0);}
+    from { opacity: 0; transform: translateY(-20px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-.boleta-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    margin-top: 10px;
+/* Header del inbox */
+.inbox-header {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 16px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e9ecef;
 }
 
-.boleta-table th {
-    background-color: #f5f4f4;
-    padding: 10px;
-    text-align: left;
-    color: #444;
-    border-bottom: 2px solid #ddd;
-}
-
-/* Hover effect */
-.boleta-table tr:hover {
-    background-color: #f5f7f9;
-}
-
-.boleta-table td {
-    padding: 12px 10px;
-    border-bottom: 1px solid #eee;
-}
-
-.boleta-table tr.no-leido {
-    background-color: #f5f7fa;
-    font-weight: 590;
-    color: #333;
-    border-left: 4px solid #2980b9;
-}
-
-.boleta-table tr.leido {
-    background-color: #aca5a5;
-    color: #555;
-}
-
-/* Ajustes de columna */
-.remitente {
-    width: 20%;
-}
-
-.fecha {
-    width: 11%;
-    color: #757575;
-    font-size: 14px;
-}
-
-.asunto {
-    width: 18%;
-    color: #333;
-}
-
-.estado {
-    width: 7%;
-}
-
-.negocio {
-    width: 20%;
-    font-style: italic;
-}
-
-.accion {
-    width: 10%;
-    text-align: center;
-}
-
-.actions {
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
     margin-bottom: 1rem;
 }
 
-.btn-primary {
-    padding: 0.8em 1.4em;
-    background-color: #2c3e50;
+.header-left h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0 0 8px 0;
+    line-height: 1.2;
+}
+
+.header-subtitle {
+    color: #6c757d;
+    font-size: 16px;
+    margin: 0;
+}
+
+.header-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.btn-refresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
     color: white;
     border: none;
-    border-radius: 2px;
+    border-radius: 12px;
     font-size: 15px;
+    font-weight: 600;
     cursor: pointer;
-    margin-top: 15px;
-    margin-bottom: 5px;
-    transition: background-color 0.3s, transform 0.2s;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
 }
 
-.btn-primary:hover {
-    background-color: #385068;
-    transform: scale(1.04);
+.btn-refresh:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
 }
 
-.btn-small {
-    padding: 0.6em 1.5em;
-    background-color: #2980b9;
-    color: white;
-    border-radius: 4px;
-    font-size: 0.9em;
-    text-decoration: none;
-    transition: background-color 0.3s, transform 0.2s;
+.btn-icon {
+    font-size: 16px;
 }
 
-.btn-small:hover {
-    background-color: #456686;
-    transform: scale(1.04);
+.btn-text {
+    white-space: nowrap;
 }
 
-#mensaje-correos {
-    margin-top: 10px;
-    padding: 10px;
-    border-radius: 6px;
-    font-weight: bold;
+/* Mensaje de estado */
+.status-message {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    min-width: 250px;
+    text-align: center;
 }
 
-#mensaje-correos.success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+.status-message.success {
+    background: #d1f2eb;
+    color: #0e6b47;
+    border: 1px solid #a7f3d0;
 }
 
-#mensaje-correos.error {
-    background-color: #f8d7d4;
-    color: #721c24;
+.status-message.error {
+    background: #fadbd8;
+    color: #a93226;
     border: 1px solid #f5c6cb;
 }
 
-/* Diseño mensaje emergente */
+/* Stats del inbox */
+.inbox-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
 
+.stat-card {
+    background: #ffffff;
+    padding: 10px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Sección de tabla */
+.table-section {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e9ecef;
+    overflow: hidden;
+}
+
+.table-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 20px 25px;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.table-filters {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.filter-select {
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background: white;
+    font-size: 14px;
+    color: #495057;
+}
+
+/* Tabla principal */
+.table-container {
+    overflow-x: auto;
+}
+
+.inbox-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.inbox-table th {
+    background: #34495e;
+    color: white;
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.inbox-table td {
+    padding: 15px 12px;
+    border-bottom: 1px solid #f1f3f4;
+    vertical-align: middle;
+}
+
+/* Filas de la tabla */
+.inbox-row {
+    transition: all 0.3s ease;
+}
+
+.inbox-row:hover {
+    background-color: #f8f9fa;
+}
+
+.inbox-row.unread {
+    background: linear-gradient(90deg, #e3f2fd 0%, #ffffff 100%);
+    border-left: 4px solid #2196f3;
+}
+
+.inbox-row.processed {
+    background: #f8f9fa;
+    opacity: 0.8;
+}
+
+/* Columnas específicas */
+.col-status {
+    width: 120px;
+}
+
+.col-sender {
+    width: 250px;
+}
+
+.col-subject {
+    width: 300px;
+}
+
+.col-date {
+    width: 120px;
+}
+
+.col-business {
+    width: 200px;
+}
+
+.col-actions {
+    width: 120px;
+    text-align: center;
+}
+
+/* Indicadores de estado */
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.status-dot.unread {
+    background: #2196f3;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.3);
+}
+
+.status-dot.processed {
+    background: #4caf50;
+}
+
+.status-dot.pending {
+    background: #ff9800;
+}
+
+.status-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Información del remitente */
+.sender-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sender-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.sender-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.sender-name {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 2px;
+}
+
+.sender-email {
+    font-size: 12px;
+    color: #6c757d;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Contenido del asunto */
+.subject-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.subject-text {
+    flex: 1;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.attachment-icon {
+    color: #6c757d;
+    font-size: 16px;
+}
+
+/* Información de fecha */
+.date-info {
+    text-align: center;
+}
+
+.date-main {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 2px;
+}
+
+.date-time {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+/* Información del negocio */
+.business-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.business-detected {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #e8f5e8;
+    padding: 4px 8px;
+    border-radius: 12px;
+    border: 1px solid #c3e6cb;
+}
+
+.business-not-detected {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff3cd;
+    padding: 4px 8px;
+    border-radius: 12px;
+    border: 1px solid #ffeaa7;
+}
+
+.business-icon {
+    font-size: 14px;
+}
+
+.business-name-text {
+    font-size: 12px;
+    font-weight: 500;
+    color: #155724;
+    padding: 8px;
+}
+
+.business-text {
+    font-size: 12px;
+    font-weight: 500;
+    color: #856404;
+    font-style: italic;
+}
+
+/* Botones de acción */
+.action-buttons {
+    display: flex;
+    justify-content: center;
+}
+
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 28px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-view {
+    background: #3498db;
+    color: white;
+}
+
+.btn-view:hover {
+    background: #2980b9;
+    transform: translateY(-1px);
+}
+
+.action-completed {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #4caf50;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.completed-icon {
+    font-size: 14px;
+}
+
+/* Estado vacío */
+.empty-row .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.empty-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #95a5a6;
+    margin-bottom: 8px;
+}
+
+.empty-description {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Mensajes flash */
 .flash-container {
     z-index: 500;
     position: fixed;
     left: 50%;
-    top: 4px;
+    top: 20px;
     transform: translateX(-50%);
     width: 100%;
-    max-width: 340px;
-    padding: 0 1.2rem;
+    max-width: 400px;
+    padding: 0 1rem;
     pointer-events: none;
 }
 
@@ -158,28 +485,85 @@
     pointer-events: auto;
 }
 
-.alert { 
-    padding: 10px 30px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+.alert {
+    padding: 15px 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     font-weight: 500;
-    font-size: 0.95rem;
-    margin-top: 8px;
+    font-size: 14px;
+    margin-bottom: 10px;
     opacity: 1;
     transform: translateY(0);
-    transition: opacity 0.5s ease, transform 0.5s ease;
+    transition: all 0.5s ease;
 }
 
 .alert.hide {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-20px);
 }
 
-.alert.success { 
-    background: #4331c9; 
-    color: #fff;
+.alert.success {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    color: white;
 }
+
 .alert.error {
-    background: #721c24; 
-    color: #fff;
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+    color: white;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+    .inbox-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .inbox-container {
+        margin-left: 0;
+        padding: 1rem;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    
+    .header-actions {
+        align-items: center;
+    }
+    
+    .inbox-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+    
+    .table-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .inbox-table {
+        font-size: 12px;
+    }
+    
+    .inbox-table th,
+    .inbox-table td {
+        padding: 10px 8px;
+    }
+    
+    .sender-info {
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
+    }
+    
+    .sender-avatar {
+        width: 35px;
+        height: 35px;
+        font-size: 14px;
+    }
 }

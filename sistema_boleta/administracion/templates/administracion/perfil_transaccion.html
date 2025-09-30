@@ -1,12 +1,9 @@
 <!-- administracion/templates/administracion/perfil_transaccion.html -->
 {% extends "core/base.html" %}
 {% load static %}
-
 {% load boletas_extras %}
 
-
 {% block title %} Detalle de transacción {% endblock %}
-
 {% block page_title %} Detalle de transacción {% endblock %}
 
 {% block content %}
@@ -14,62 +11,227 @@
 <link rel="stylesheet" href="{% static 'administracion/css/perfil_transaccion.css' %}">
 <script src=" {% static 'administracion/js/perfil_transaccion.js' %}"></script>
 
-<div class="container">
-    <h1>Perfil de Transacción: {{ transaccion.nombre }}</h1>
+<div class="main-content"> 
+    <div class="transaccion-container">
 
-    <section class="tarjeta-azul">
-        <h2>Datos de la Transacción</h2>
-        <ul>
-            <p>Estado: {{ transaccion.get_estado_display }}</p>
-            <p>Ingreso al sistema: {{ transaccion.fecha_ingreso_sistema }}</p>
-            <p>Transacción generada: {{ transaccion.fechaTransaccion }}</p>
-            <p>Última actualización: {{ transaccion.ultima_actualizacion }}</p>
-            <p>Período pagado: {{ transaccion.periodo_pagado }}</p>
-            <p>Método de pago: {{ boleta.tipoPago }}</p>
-            <p>Comentarios: </p>        
-            <ul>
-                {% for c in transaccion.comentario.splitlines %}
-                    {{ c }} 
-                {% endfor %}    
-            </ul>
-        </ul>
-    </section>
-
-    <!--Contenedor de tarjetas complementarias-->
-    <div class="tarjetas-complementarias">
-        <section class="tarjeta-roja">
-            <h2>Negocio y Locales</h2>
-            <p>Negocio: {{ negocio.nombre }}</p>
-            <p>Local(es): </p>
-            <p>
-                {% for local in locales %}
-                    <p>{{ local.nombre }} - Costo: {{ local.nivel.costo|floatformat:".2f" }}</p>
-                {% endfor %}
-            </p>
-            <p>Total base: {{ costo_locales|floatformat:".2f" }}</p>
-        </section>
-
-        {% if not ocultar_mora %}
-            <section class="tarjeta-amarilla">
-                <h2>Excedentes y Faltantes</h2>
-                <p>Excedente: {{ transaccion.excedente|formato_q }}</p>
-                <p>Faltante: {{ transaccion.faltante|formato_q }}</p>
-            </section>
+        <!-- Header principal mejorado -->
+        <div class="transaccion-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1>Transacción #{{ transaccion.idTransaccion }}</h1>
+                    <div class="status-badge status-{{ transaccion.estado }}">
+                        {{ transaccion.get_estado_display }}
+                    </div>
+                </div>
+                <div class="header-right"> 
+                    <div class="transaction-amount-display">
+                        <span class="currency-symbol">Q.</span>
+                        <span class="amount-large">{{ transaccion.monto|formato_q }}</span>
+                    </div>
+                    <div class="payment-method">{{ boleta.tipoPago }}</div>
+                </div>
+            </div>
             
-            <section class="tarjeta-naranja">
-                <h2>Mora y Plazos</h2>
-                <p>Días de mora: {{ transaccion.dias_retraso }}</p>
-                <p>Monto mora: {{ transaccion.mora_monto|formato_q }}</p>
-                <p>Confirmación estimada: {{ transaccion.fecha_limite_confirmacion }}</p>
-            </section>
-        {% endif %}
+            <div class="timeline-info">
+                <div class="timeline-item">
+                    <div class="timeline-label">Recepción</div>
+                    <div class="timeline-value">{{ transaccion.fecha_ingreso_sistema|date:"d/m/Y H:i" }}</div>
+                </div>
+                <div class="timeline-arrow">→</div>
+                <div class="timeline-item">
+                    <div class="timeline-label">Procesamiento</div>
+                    <div class="timeline-value">{{ transaccion.fechaTransaccion|date:"d/m/Y H:i" }}</div>
+                </div>
+                <div class="timeline-arrow">→</div>
+                <div class="timeline-item">
+                    <div class="timeline-label">Última actualización</div>
+                    <div class="timeline-value">{{ transaccion.ultima_actualizacion|date:"d/m/Y H:i" }}</div>
+                </div>
+                <div class="timeline-arrow">→</div>
+                <div class="timeline-item">
+                    <div class="timeline-label">Validación</div>
+                    <div class="timeline-value">
+                        {% if transaccion.estado == "exitosa" or transaccion.estado == "espera_acreditacion" %}
+                            Completada
+                        {% else %}
+                            Pendiente
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        <!--Bloque de cierre-->
-        <section class="tarjeta-verde">
-            <h2> Resumen de pago </h2>
-            <p>{{ mensaje_final|linebreaksbr }}</p>
-        </section>
+        <!-- Grid de información principal -->
+        <div class="info-grid">
+            
+            <!-- Datos principales -->
+            <div class="info-card card-primary">
+                <div class="card-header">
+                    <h2>📋 Datos de la Transacción</h2>
+                </div>
+                <div class="card-body">
+                    <div class="info-row">
+                        <span class="info-label">Período pagado:</span>
+                        <span class="info-value period-badge">{{ transaccion.periodo_pagado|periodo_legible }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Método de pago:</span>
+                        <span class="info-value">{{ boleta.tipoPago }}</span>
+                    </div>
+                    <div class="comments-section">
+                        <div class="comments-header">Comentarios del sistema</div>
+                        <div class="comments-content">
+                            {% for c in transaccion.comentario.splitlines %}
+                                <div class="comment-line">{{ c }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Negocio y locales -->
+            <div class="info-card card-business">
+                <div class="card-header">
+                    <h2>🏢 Negocio y Locales</h2>
+                </div>
+                <div class="card-body">
+                    <div class="business-info">
+                        <div class="business-name">{{ negocio.nombre }}</div>
+                        <div class="business-details">
+                            <div class="locals-section">
+                                <div class="locals-header">Locales arrendados</div>
+                                {% for local in locales %}
+                                    <div class="local-item">
+                                        <span class="local-name">{{ local.nombre }}</span>
+                                        <span class="local-cost">Q.{{ local.nivel.costo|formato_q }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div class="total-section">
+                                <div class="total-label">Total base:</div>
+                                <div class="total-amount">Q.{{ costo_locales|formato_q }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if not ocultar_mora %}
+                <!-- Excedentes y faltantes -->
+                <div class="info-card card-balance">
+                    <div class="card-header">
+                        <h2>💰 Excedentes y Faltantes</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="balance-grid">
+                            <div class="balance-item">
+                                <div class="balance-label">Excedente</div>
+                                <div class="balance-value excedente">{{ transaccion.excedente|formato_q }}</div>
+                            </div>
+                            <div class="balance-item">
+                                <div class="balance-label">Faltante</div>
+                                <div class="balance-value faltante">{{ transaccion.faltante|formato_q }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Mora y plazos -->
+                <div class="info-card card-mora">
+                    <div class="card-header">
+                        <h2>⏱️ Mora y Plazos</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="mora-grid">
+                            <div class="mora-item">
+                                <div class="mora-label">Días de mora</div>
+                                <div class="mora-value">{{ transaccion.dias_retraso }}</div>
+                            </div>
+                            <div class="mora-item">
+                                <div class="mora-label">Monto mora</div>
+                                <div class="mora-value">{{ transaccion.mora_monto|formato_q }}</div>
+                            </div>
+                            <div class="mora-item full-width">
+                                <div class="mora-label">Confirmación estimada</div>
+                                <div class="mora-value">{{ transaccion.fecha_limite_confirmacion|date:"d/m/Y" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Resumen final destacado -->
+        <div class="summary-section">
+            <div class="summary-header">
+                <h2> Resumen de Pago</h2>
+            </div>
+            <div class="summary-content">
+                {{ mensaje_final|linebreaksbr }}
+            </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="actions-section">
+            {% if transaccion.estado == "espera_confirmacion_faltante" or transaccion.estado == "espera_confirmacion" %}
+                <button class="btn btn-validation" onclick="abrirModal()">
+                    <span class="btn-icon">✓</span>
+                    Validar Boleta
+                </button>
+            {% endif %}
+
+            {% if puede_generar_recibo %}
+                <button class="btn btn-success" onclick="generarRecibo({{ transaccion.idTransaccion }}, {{ transaccion.negocio.idNegocio }})">
+                    <span class="btn-icon">📄</span>
+                    Generar Recibo
+                </button>
+            {% endif %}
+        </div>
+
     </div>
 </div>
 
+<!-- Modal mejorado -->
+<div class="modal-overlay" id="validar_modal" style="display: none;">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h2>⚡ Validar Transacción</h2>
+            <button class="modal-close" onclick="cerrarModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="validation-info">
+                <h3>¿Confirmar validación de fondos?</h3>
+                <div class="validation-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Negocio:</span>
+                        <span class="detail-value">{{ transaccion.negocio.nombre }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Monto:</span>
+                        <span class="detail-value amount-highlight">Q.{{ transaccion.monto|floatformat:".2f" }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Método:</span>
+                        <span class="detail-value">{{ boleta.tipoPago }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Período:</span>
+                        <span class="detail-value">{{ transaccion.periodo_pagado|periodo_legible }}</span>
+                    </div>
+                </div>
+                <div class="validation-warning">
+                    <div class="warning-icon">⚠️</div>
+                    <div class="warning-text">Esta acción cambiará el estado de la transacción y no se puede deshacer.</div>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn-modal btn-cancel" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn-modal btn-reject" onclick="validarTransaccion(false)">Rechazar</button>
+                <button class="btn-modal btn-validate" onclick="validarTransaccion(true, '{{ transaccion.idTransaccion }}')">Validar</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

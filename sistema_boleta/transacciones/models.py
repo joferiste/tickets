@@ -8,7 +8,8 @@ class Transaccion(models.Model):
     ESTADOS = [
         ('pendiente', 'Pendiente'),     # Recién creada
         ('en_revision', 'En revisión'), # Validación manual o por reglas
-        ('espera_confirmacion', 'En espera de confirmación de fondos'), 
+        ('espera_confirmacion', 'En espera de confirmación de fondos'),
+        ('espera_confirmacion_faltante', 'En espera de confirmación - Con faltante'), 
         ('espera_complemento', 'Espera de complemento de pago'),
         ('espera_acreditacion', 'Espera de acreditación de saldo a favor'),
         ('procesada', 'Procesada'),     # Validaciones técnicas pasadas

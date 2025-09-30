@@ -1,0 +1,30 @@
+<!-- administracion/recibo_detalles.html -->
+{% load static %}
+
+{% block title  %} Detalles de recibo {% endblock %}
+{% block page_title %} Detalles de recibo {% endblock %}
+
+<div class="recibo-detalles">
+    <h2>Detalles del Recibo {{ recibo.correlativo }}</h2>
+    
+    <div class="detalle-section">
+        <h3>Información del Recibo</h3>
+        <p><strong>UUID:</strong> {{ recibo.uuid }}</p>
+        <p><strong>Fecha de Generación:</strong> {{ recibo.fechaGeneracion|date:"d/m/Y H:i" }}</p>
+        <p><strong>Estado:</strong> {{ recibo.estado.nombre }}</p>
+        <p><strong>Enviado:</strong> {% if recibo.enviado %}Sí ({{ recibo.fechaEnvio|date:"d/m/Y H:i" }}){% else %}No{% endif %}</p>
+    </div>
+    
+    <div class="detalle-section">
+        <h3>Información de la Transacción</h3>
+        <p><strong>ID:</strong> {{ transaccion.idTransaccion }}</p>
+        <p><strong>Período:</strong> {{ transaccion.periodo_pagado }}</p>
+        <p><strong>Monto:</strong> Q.{{ transaccion.monto }}</p>
+        <p><strong>Estado:</strong> {{ transaccion.estado }}</p>
+    </div>
+    
+    <div class="detalle-section">
+        <h3>Historial de Envíos</h3>
+        <p>{{ recibo.mensajeEnvio|default:"Sin historial de envíos" }}</p>
+    </div>
+</div>

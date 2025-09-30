@@ -2,80 +2,333 @@
 
 {% load static %}
 
+{% load adds %}
+
 {% block title  %} Perfil de {{ negocio.nombre }} {% endblock %}
 {% block page_title %} Perfil de {{ negocio.nombre }} {% endblock %}
 
 {% block content %}
 
 <link rel="stylesheet" href="{% static 'negocios/css/perfiles_negocios.css' %}">
+<script src="{% static 'negocios/js/perfiles_negocios.js' %}"></script>
 
 <div class="main-content">
     <div class="perfil-container"> 
 
+<!-- Header mejorado -->
         <div class="perfil-header">
-            <h1> {{ negocio.nombre }}</h1>
-            <p><strong>Encargado:</strong> {{ negocio.usuario.nombre }}</p>
-            {% for ocupacion in ocupaciones %}
-                <p><strong>Local Asignado:</strong> {{ ocupacion.local.nombre }}</p>
-            {% endfor %}
-            <p><strong>Correo:</strong> {{ negocio.email }}</p>
-            <p><strong>Teléfono:</strong> {{ negocio.telefono1 }}</p>
-            <p><strong>NIT:</strong> {{ negocio.nit|default_if_none:"No Ingresado" }}</p>
-            <p><strong>Estado:</strong> {{ negocio.estado.nombre }}</p>
-
+            <div class="header-content">
+                <div class="header-left">
+                    <h1>{{ negocio.nombre }}</h1>
+                    <div class="status-badge status-{{ negocio.estado.nombre|lower }}">
+                        {{ negocio.estado.nombre }}
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="header-actions">
+                        <button class="btn-action btn-edit">
+                            Editar Perfil
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Responsable:</span>
+                    <span class="info-value">{{ negocio.usuario.nombre }}</span>
+                </div>
+                {% for ocupacion in ocupaciones %}
+                <div class="info-item">
+                    <span class="info-label">Local Asignado:</span>
+                    <span class="info-value">{{ ocupacion.local.nombre }}</span>
+                </div>
+                {% endfor %}
+                <div class="info-item">
+                    <span class="info-label">Correo:</span>
+                    <span class="info-value">{{ negocio.email }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Teléfono:</span>
+                    <span class="info-value">{{ negocio.telefono1 }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">NIT:</span>
+                    <span class="info-value">{{ negocio.nit|default_if_none:"No Ingresado" }}</span>
+                </div>
+            </div>
         </div>
 
+
+        <!-- Sección de boletas mejorada -->
         <div class="perfil-section">
-            <h2>Boletas Recibidas</h2>
-            <ul>
+            <div class="section-header">
+                <h2>
+                    Boletas Recibidas
+                </h2>
+                <div class="section-stats">
+                    <span class="stat-badge">Total: {{ sandbox|length }}</span>
+                </div>
+            </div>
+
+            <div class="cards-container">
                 {% for boleta in sandbox %}
-                    <li>
-                        <strong>{{ boleta.fecha_recepcion|date:"d/m/Y H:i" }}</strong> - 
-                        <a href="{{ boleta.imagen.url }}" target="_blank">Ver boleta</a>                        
-                    </li>
+                    <div class="boleta-card" data-boleta-id="{{ forloop.counter }}">
+                        <div class="card-id-badge">
+                            <span class="id-number">{{ forloop.counter }}</span>
+                            <span class="id-label">BOLETA</span>
+                        </div>
+                        <div class="card-header">
+                            <div class="card-date">
+                                <span class="date-day">{{ boleta.fecha_recepcion|date:"d" }}</span>
+                                <span class="date-month">{{ boleta.fecha_recepcion|date:"M Y" }}</span>
+                            </div>
+                            <div class="card-time">{{ boleta.fecha_recepcion|date:"H:i" }}</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-icon">📋</div>
+                            <div class="card-info">
+                                <p class="card-title">Boleta Recibida</p>
+                                <p class="card-desc">Documento procesado automáticamente</p>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <a href="{{ boleta.imagen.url }}" target="_blank" class="btn-card-action">
+                                Ver Boleta
+                            </a>
+                        </div>
+                        <div class="connection-line boleta-line"></div>
+                    </div>
                 {% empty %}
-                    <li>No hay boletas registradas.</li>
+                    <div class="empty-state">
+                        <div class="empty-icon">📋</div>
+                        <h3>No hay boletas registradas</h3>
+                        <p>Las boletas aparecerán aquí cuando sean procesadas por el sistema.</p>
+                    </div>
                 {% endfor %}
-            </ul>
+            </div>
         </div>
 
+
+        <!-- Sección de transacciones mejorada -->
         <div class="perfil-section">
-            <h2> Transacciones</h2>
-            <ul>
+            <div class="section-header">
+                <h2>
+                    Transacciones
+                </h2>
+                <div class="section-stats">
+                    <span class="stat-badge">Total: {{ transacciones|length }}</span>
+                </div>
+            </div>
+
+            <div class="cards-container">
                 {% for transaccion in transacciones %}
-                <a href="{% url 'administracion:perfil_transaccion' transaccion.idTransaccion %}">
-                    <li>
-                        <strong>{{ transaccion.fechaTransaccion|date:"d/m/Y H:i" }}</strong><br>
-                        Estado: {{ transaccion.get_estado_display }} <br>
-                        Comentario: {{ transaccion.comentario|default:"Sin comentario" }}
-                    </li>
-                </a>
-                {% empty %}
-                    <li>No hay transacciones aún.</li>
+                    <a href="{% url 'administracion:perfil_transaccion' transaccion.idTransaccion %}" class="transaction-card-link">
+                        <div class="transaction-card" data-transaccion-id="{{ forloop.counter }}">
+                            <div class="card-id-badge">
+                                <span class="id-number">{{ forloop.counter }}</span>
+                                <span class="id-label">TRANSACCIÓN</span>
+                            </div>
+                            <div class="relationship-indicator">
+                                <span class="relation-text">← Boleta #{{ forloop.counter }}</span>
+                            </div>
+                            <div class="card-header">
+                                <div class="card-date">
+                                    <span class="date-day">{{ transaccion.fechaTransaccion|date:"d" }}</span>
+                                    <span class="date-month">{{ transaccion.fechaTransaccion|date:"M Y" }}</span>
+                                </div>
+                                <div class="transaction-status status-{{ transaccion.estado|lower }}">
+                                    {{ transaccion.get_estado_display }}
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="transaction-amount">
+                                    <span class="currency">Q.</span>
+                                    <span class="amount">{{ transaccion.monto|formato_q }}</span>
+                                </div>
+                                <div class="transaction-info">
+                                    <p class="transaction-id">ID: {{ transaccion.idTransaccion }}</p>
+                                    <p class="transaction-method">{{ transaccion.forma_pago }}</p>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="comment-preview">
+                                    {{ transaccion.comentario|default:"Sin comentarios"|truncatechars:60 }}
+                                </div>
+                                <div class="card-arrow">→</div>
+                            </div>
+                            <div class="connection-line transaction-line"></div>
+                        </div>
+                    </a>
+                {% empty %} 
+                    <div class="empty-state">
+                        <div class="empty-icon">💳</div>
+                        <h3>No hay transacciones registradas</h3>
+                        <p>Las transacciones aparecerán aquí cuando se procesen los pagos.</p>
+                    </div>
                 {% endfor %}
-            </ul>
+            </div>
         </div>
 
+        <!-- Sección de recibos  -->
         <div class="perfil-section">
-            <h2> Recibos Generados</h2>
-            <ul>
-                {% for recibo in recibos %}
-                    <li>
-                        {{ recibo.fechaGeneracion|date:"d/m/Y H:i" }} -
-                        Correlativo: {{ recibo.correlativo }} -
-                        <a href="{{ recibo.archivo.url }}" target="_blank">Descargar</a> -
-                        {% if recibo.enviado %}
-                            Enviado: {{ recibo.fechaEnvio|date:"d/m/Y H:i" }}
-                        {% else %}
-                            <span class="pendiente">No enviado</span>
-                        {% endif %}
-                    </li>
-                {% empty %}
-                    <li>No hay recibos generados.</li>
-                {% endfor %}
-            </ul>
-        </div>
+            <div class="section-header">
+                <h2>Recibos Generados</h2>
+                <div class="section-stats">
+                    <span class="stat-badge">Total: {{ recibos|length }}</span>
+                </div>
+            </div>
 
+            <div class="table-container">
+                <table class="recibos-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Fecha Generación</th>
+                            <th>Correlativo</th>
+                            <th>Estado</th>
+                            <th>Archivo</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for recibo in recibos %}
+                            <tr data-recibo-id="{{ forloop.counter }}">
+                                <td>
+                                    <div class="table-id-badge">
+                                        <span class="table-id-number">{{ forloop.counter }}</span>
+                                        <span class="table-id-label">RECIBO</span>
+                                        <div class="table-relationship">← Trans. #{{ forloop.counter }}</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fecha-info">
+                                        <span class="fecha-principal">{{ recibo.fechaGeneracion|date:"d/m/Y" }}</span>
+                                        <span class="fecha-hora">{{ recibo.fechaGeneracion|date:"H:i" }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="correlativo">{{ recibo.correlativo }}</span>
+                                </td>
+                                <td>
+                                    {% if recibo.enviado %}
+                                        <span class="estado-badge estado-enviado">
+                                            ✓ Enviado
+                                        </span>
+                                        <div class="fecha-envio">{{ recibo.fechaEnvio|date:"d/m/Y H:i" }}</div>
+                                    {% else %}
+                                        <span class="estado-badge estado-pendiente">
+                                            ⏰ Pendiente
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ recibo.archivo.url }}" target="_blank" class="btn-download">
+                                        ⬇ Descargar PDF
+                                    </a>
+                                </td>
+                                <td>
+                                    <div class="acciones-grupo">
+                                        {% if recibo.enviado %}
+                                            <button class="btn-accion btn-reenviar" onclick="reenviarRecibo('{{ recibo.idRecibo }}', this)">
+                                                📧 Reenviar
+                                            </button>
+                                        {% else %}
+                                            <button class="btn-accion btn-enviar" onclick="enviarRecibo('{{ recibo.idRecibo }}', this)">
+                                                ✉ Enviar
+                                            </button>
+                                        {% endif %}
+                                        <button class="btn-accion btn-info" onclick="verDetalles({{ recibo.idRecibo }})">
+                                            ℹ Detalles
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="6" class="no-recibos">
+                                    <div class="empty-state">
+                                        <div class="empty-icon">📄</div>
+                                        <h3>No hay recibos generados</h3>
+                                        <p>Los recibos aparecerán aquí cuando se generen automáticamente tras validar las transacciones.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modales -->
+<!-- Modal de confirmación para enviar recibo -->
+<div id="confirmarEnvioModal" class="modal-overlay" style="display: none;">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3>Confirmar Envío de Recibo</h3>
+            <button class="modal-close" onclick="cerrarModalConfimacion()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="confirmation-icon">📧</div>
+            <div class  ="confirmation-message">
+                <p><strong>¿Desea enviar este recibo por correo electrónico?</strong></p>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-modal btn-cancel" onclick="cerrarModalConfimacion()">
+                Cancelar
+            </button>
+            <button class="btn-modal btn-confirm" id="btnConfirmarEnvio" onclick="confirmarEnvio()">
+                Enviar Recibo
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación para reenviar recibo -->
+<div id="confirmarReenvioModal" class="modal-overlay" style="display: none;">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3>Confirmar Reenvío de Recibo</h3>
+            <button class="modal-close" onclick="cerrarModalReenvio()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="confirmation-icon">🔄</div>
+            <div class="confirmation-message">
+                <p><strong>¿Desea reenviar este recibo por correo electrónico?</strong></p>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-modal btn-cancel" onclick="cerrarModalReenvio()">
+                Cancelar
+            </button>
+            <button class="btn-modal btn-confirm" id="btnConfirmarReenvio">
+                Reenviar Recibo
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de resultado (success/error) -->
+<div id="resultadoModal" class="modal-overlay" style="display: none;">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 id="resultadoTitulo">Resultado</h3>
+            <button class="modal-close" onclick="cerrarModalResultado()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="resultado-content">
+                <div id="resultadoIcon" class="result-icon"></div>
+                <div id="resultadoMensaje" class="result-message"></div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-modal btn-primary" onclick="cerrarModalResultado()">
+                Entendido
+            </button>
+        </div>
     </div>
 </div>
 

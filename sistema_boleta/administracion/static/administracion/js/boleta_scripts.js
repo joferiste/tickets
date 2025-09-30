@@ -13,7 +13,7 @@ function closeModal() {
 function rotateLeft() {
     currentRotation -= 90;
     updateTransform();
-}
+} 
 
 function rotateRight() {
     currentRotation += 90;
@@ -63,8 +63,77 @@ function waitForElement(selector, callback, maxAttempts = 50) {
     check();
 }
 
+function sanitizeDigits(el) {
+    // Solo digitos, no espacios
+    el.value = el.value.replace(/\D+/g, '');
+}
+
+function sanitizeMoney(el) {
+    // Solo digitos y un separador decimal (coma o punto)
+    let v = el.value.replace(/[^\d.,]/g, '');
+    // Si hay mas de una coma o punto, conservar solo el primero
+    const parts = v.split(/[.,]/);
+    if (parts.lenght > 2) {
+        v = parts[0] + '.' + parts.slice(1).join('').replace(/[^\d]/g, '');
+    } else if (parts.lenght === 2) {
+        v = parts[0] + '.' + parts[1];
+    }
+    el.value = v;
+}
+
+
 // Esperar a que el DOM esté cargado
 document.addEventListener('DOMContentLoaded', function() {
+    const numeroBoleta = document.getElementById('numeroBoleta');
+    const monto = document.getElementById('monto');
+    const fechaInput = document.getElementById('fechaDeposito');
+
+    if (fechaInput) {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0); // Normalizando
+
+        fechaInput.addEventListener('change', function() {
+            const valor = new Date(this.value);
+
+            if (valor > hoy) {
+                showResultadoModal('error', 'La fecha no puede ser mayor a la actual');
+                this.value = hoy.toISOString().split('T')[0];
+            }
+        });
+    }
+
+    if (numeroBoleta) {
+        numeroBoleta.addEventListener('input', () => sanitizeDigits(numeroBoleta));
+    }
+
+    if (monto) {
+        monto.addEventListener('input', () => sanitizeMoney(monto))
+    }
+
+    // Validacion extra al enviar (ademas del patter html)
+
+    const form = document.getElementById('procesarBoletaForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const nb = (numeroBoleta?.value || '').trim();
+            const mt = (monto?.value || '').trim();
+            const reBoleta = /^\d{4,10}$/;
+            const remonto = /^\d+([.,]\d{1,2})?$/;
+
+            if (!reBoleta.test(nb)) {
+                e.preventDefault();
+                showResultadoModal('error', 'Numero de boleta invalido, favor de ingresar solo digitos (4 - 10)', null);
+                return;
+            }
+
+            if (!remonto.test(mt)) {
+                e.preventDefault();
+                showResultadoModal('error', 'Monto invalido: use formato 1234.56 o o 1234.56', null);
+                return;
+            }
+        }, { capture: true });
+    }
+
     console.log('DOM Content Loaded');
     
     // Esperar a que el formulario esté disponible
@@ -128,45 +197,59 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 }); 
 
-// Funciones globales
 function showResultadoModal(tipo, mensaje, transaccionId) {
     console.log('Mostrando modal resultado:', tipo, mensaje);
-    
+
     // Mapear tipos Backend a IDs frontend
     const mapTipos = {
         success: 'exitoso',
-        pendiete: 'pendiente',
+        pendiente: 'pendiente',
         error: 'error'
     };
-
     const tipoMapped = mapTipos[tipo] || tipo;
-
 
     // Ocultar todas las secciones
     document.querySelectorAll('.resultado-section').forEach(section => {
         section.classList.add('hidden-1');
     });
-    
+
     // Mostrar la sección correspondiente
     const seccion = document.getElementById(`resultado-${tipoMapped}`);
     const mensajeElement = document.getElementById(`mensaje-${tipoMapped}`);
-    
-    if (seccion && mensajeElement) {
+
+    if (!seccion || !mensajeElement) {
+        console.error('No se encontró la sección o elemento de mensaje para:', tipoMapped);
+    } else {
         seccion.classList.remove('hidden-1');
         mensajeElement.textContent = mensaje;
         console.log('Sección mostrada:', tipoMapped);
-    } else {
-        console.error('No se encontró la sección o mensaje para:', tipoMapped);
+
+        // Buscar el botón "Ver Transacción" DENTRO de la sección activa.
+        // Intentamos por id local, luego por clase y finalmente por data-attribute.
+        let verBtn = seccion.querySelector('#verTransaccionBtn') 
+                || seccion.querySelector('.btn-resultado.primary')
+                || seccion.querySelector('button[data-action="ver-transaccion"]');
+
+        if (verBtn) {
+            // Reemplazar el botón por su clon para limpiar todos los event listeners previos
+            const nuevoBtn = verBtn.cloneNode(true);
+            verBtn.parentNode.replaceChild(nuevoBtn, verBtn);
+            verBtn = nuevoBtn;
+
+            if (transaccionId) {
+                verBtn.style.display = ''; // asegurarnos visible
+                verBtn.addEventListener('click', function () {
+                    window.location.href = `/administracion/transaccion/${transaccionId}/`;
+                });
+            } else {
+                // si no hay id, ocultarlo
+                verBtn.style.display = 'none';
+            }
+        } else {
+            console.warn('No se encontró botón "Ver Transacción" dentro de la sección activa.');
+        }
     }
-    
-    // Configurar el botón de ver transacción (redigir directamente)
-    const verBtn = document.getElementById('verTransaccionBtn');
-    if (transaccionId && verBtn) {
-        verBtn.onclick = function() {
-            window.location.href = `/administracion/transaccion/${transaccionId}/`;
-        };
-    }
-    
+
     // Mostrar el modal de resultado
     const resultadoModal = document.getElementById('resultadoModal');
     if (resultadoModal) {
@@ -176,6 +259,7 @@ function showResultadoModal(tipo, mensaje, transaccionId) {
         console.error('No se encontró el modal de resultado');
     }
 }
+
 
 function closeResultadoModal() {
     const resultadoModal = document.getElementById('resultadoModal');

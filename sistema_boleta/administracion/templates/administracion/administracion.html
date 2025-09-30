@@ -11,31 +11,76 @@
 <link rel="stylesheet" href="{% static 'administracion/css/admin_style.css' %}">
 <script src="{% static 'administracion/js/admin_scripts.js' %}"> </script>
 
-<div class="admin-container">
-    <h1>Administración de boletas entrantes</h1>
+<div class="inbox-container">
+    <!-- Header del inbox -->
+    <div class="inbox-header">
+        <div class="header-content">
+            <div class="header-left">
+                <h1> Administración de boletas entrantes </h1>
+                <div class="header-subtitle">
+                    Gestiona y procesa las boletas recibidas por correo electronico
+                </div>
+            </div>
+            <div class="header-actions">
+                <div id="mensaje-correos" class="status-message" style="display: none;"></div>
+                <button class="btn-refresh" id="btn-revisar-correos">
+                    <span class="btn-icon"> 📧 </span>
+                    <span class="btn-text"> Visualizar correos entrantes </span>
+                </button>
+            </div>
+        </div>
 
-    <!-- Botón para revisar correos -->
+        <!-- Stats del inbox -->
+        <div class="inbox-stats">
+            <div class="stat-card">
+                <div class="stat-number">{{ total_boletas }}</div>
+                <div class="stat-label">Total Boletas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ unread_count }}</div>
+                <div class="stat-label">No Leídas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ processed_count }}</div>
+                <div class="stat-label">Procesadas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ pending_count }}</div>
+                <div class="stat-label">Pendientes</div>
+            </div>
+        </div>
+    </div>
+
+<!-- Tabla de boletas -->
+    <div class="table-section">
+        <div class="table-header">
+            <h2>Boletas Recibidas</h2>
+            <div class="table-filters">
+                <select class="filter-select">
+                    <option value="">Todos los estados</option>
+                    <option value="pendiente">Pendientes</option>
+                    <option value="procesada">Procesadas</option>
+                </select>
+            </div>
+        </div>
         
-    <div id="mensaje-correos" style="display:none;"></div>
-    <button class="btn-primary" id="btn-revisar-correos">Visualizar correos entrantes </button>
-        
-    <!-- Tabla de correos procesados -->
-    <div class="table-responsive">
-        <table class="boleta-table">
-            <thead>
-                <tr>
-                    <th>Remitente</th>
-                    <th>Asunto</th>
-                    <th>Fecha</th>
-                    <th>Estado</th>
-                    <th>Negocio Detectado</th>
-                    <th>Acción</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-boletas-body">
-                {% include 'administracion/_tabla_boletas.html' %}
-            </tbody>
-        </table>
+        <div class="table-container">
+            <table class="inbox-table">
+                <thead>
+                    <tr>
+                        <th class="col-status">Estado</th>
+                        <th class="col-sender">Remitente</th>
+                        <th class="col-subject">Asunto</th>
+                        <th class="col-date">Fecha</th>
+                        <th class="col-business">Negocio Detectado</th>
+                        <th class="col-actions">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-boletas-body">
+                    {% include 'administracion/_tabla_boletas.html' %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 

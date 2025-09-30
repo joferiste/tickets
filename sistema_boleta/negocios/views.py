@@ -1,11 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse, HttpResponse
 from negocios.forms import NegocioForm, EstadoNegocioForm, CategoriaForm, BusquedaNegocioForm, AsignarLocalForm
 from negocios.models import EstadoNegocio, Categoria, Negocio
 from locales.models import Local, OcupacionLocal, EstadoLocal   
 from django.db.models.deletion import ProtectedError
 from django.views.decorators.http import require_POST
+from django.core.mail import EmailMessage
+from django.conf import settings
+from django.db import transaction
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.generic.detail import DetailView
@@ -13,6 +17,9 @@ from boletas.models import Boleta, BoletaSandbox
 from transacciones.models import Transaccion
 from recibos.models import Recibo
 import json
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+
 
 
 def CreacionNegocios(request):
@@ -253,9 +260,224 @@ class PerfilNegocioView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         negocio = self.get_object()
-        context['sandbox'] = BoletaSandbox.objects.filter(metadata__negocio_id=negocio.idNegocio).order_by("fecha_recepcion")
+        context['sandbox'] = BoletaSandbox.objects.filter(metadata__negocio_id=negocio.idNegocio).order_by("-fecha_recepcion")
         context['boletas'] = Boleta.objects.filter(negocio=negocio)
         context['transacciones'] = Transaccion.objects.filter(boleta__negocio=negocio)
         context['recibos'] = Recibo.objects.filter(transaccion__boleta__negocio=negocio)
         context['ocupaciones'] = OcupacionLocal.objects.filter(negocio=negocio, fecha_fin__isnull=True)
         return context
+    
+
+def enviar_recibo(request, recibo_id):
+    """
+    Vista para enviar un recibo por correo electronico
+    """
+    try:
+        recibo = get_object_or_404(Recibo, idRecibo=recibo_id)
+
+        # Verificar que el recibo no haya sido enviado antes
+        if recibo.enviado:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Este recibo ya fue enviado anteriormente.',
+            })
+        
+        # Verificar que el recibo tenga archivo
+        if not recibo.archivo:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'El recibo no tiene archivo generado.',
+            })
+        
+        # Preparar el correo
+        asunto = f'Recibo oficial - No. {recibo.correlativo}'
+
+
+        MESES_ES = {
+            "01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril",
+            "05": "Mayo", "06": "Junio", "07": "Julio", "08": "Agosto",
+            "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre"
+        }
+        periodo_str = str(recibo.transaccion.periodo_pagado)
+        anio, mes = periodo_str.split('-')
+        # Preparar descripcion
+        descripcion = f"Mes de {MESES_ES[mes]} del {anio}"
+
+
+
+        mensaje_html = f"""
+        <html>
+        <body>
+            <h2>Recibo de Transacción</h2>
+            
+            <p>Estimado/a <strong>{recibo.transaccion.negocio.usuario.nombre}</strong>,</p>
+            
+            <p>Adjuntamos el recibo oficial correspondiente a su transacción:</p>
+            
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3>Detalles de la Transacción</h3>
+                <p><strong>Negocio:</strong> {recibo.transaccion.negocio.nombre}</p>
+                <p><strong>Correlativo:</strong> {recibo.correlativo}</p>
+                <p><strong>Período:</strong> {descripcion}</p>
+                <p><strong>Monto:</strong> Q.{recibo.transaccion.monto:,.2f}</p>
+                <p><strong>Fecha de Transacción:</strong> {recibo.transaccion.fechaTransaccion.strftime('%d/%m/%Y %H:%M')}</p>
+                <p><strong>UUID de Verificación:</strong> {recibo.uuid}</p>
+            </div>
+            
+            <p>El archivo PDF adjunto constituye su recibo oficial. Consérvelo para sus registros contables.</p>
+            
+            <p>Si tiene alguna consulta, no dude en contactarnos.</p>
+            
+            <br>
+            <p>Atentamente,<br>
+            <strong>Alquileres Comerciales Emanuel</strong></p>
+        </body>
+        </html>
+        """
+
+        email = EmailMessage(
+            subject=asunto,
+            body=mensaje_html,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[recibo.email],
+        )
+        email.content_subtype = 'html'
+
+        # Adjuntar el PDF
+        with recibo.archivo.open('rb') as archivo:
+            email.attach(f'{recibo.nombre}.pdf', archivo.read(), 'application/pdf')
+
+        # Enviar el correo
+        email.send()
+
+        # Actualizar el estado del recibo
+        with transaction.atomic():
+            recibo.enviado = True
+            recibo.fechaEnvio = timezone.now()
+            recibo.mensajeEnvio = f"Enviado correctamente a {recibo.email} "
+            recibo.save()
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Recibo enviado correctamente por correo electronico.'
+        })
+    
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Error al enviar el recibo: {str(e)}'
+        })
+    
+@require_http_methods(["POST"])
+@csrf_exempt
+def reenviar_recibo(request, recibo_id):
+    """
+    Vista para reenviar un recibo que ya fue enviado anteriormente
+    """
+
+    try:
+        recibo = get_object_or_404(Recibo, idRecibo=recibo_id)
+
+        # Verificar que el recibo haya sido enviado anteriormente
+        if not recibo.enviado:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Este recibo no ha sido enviado antes, use la opcion -Enviar- en su lugar.'
+            })
+        
+        # Verificar que el recibo tenga archivo
+        if not recibo.archivo:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'El recibo no tiene archivo generado.'
+            })
+        
+        # Preparar el correo de reenvio
+        asunto = f'REENVIO -  Recibo Oficial - No. {recibo.correlativo}'
+
+        mensaje_html = f"""
+<html>
+        <body>
+            <h2>Reenvío de Recibo de Transacción</h2>
+            
+            <p>Estimado/a <strong>{recibo.transaccion.negocio.usuario.name}</strong>,</p>
+            
+            <p>Le reenviamos el recibo oficial correspondiente a su transacción:</p>
+            
+            <div style="background-color: #fff3cd; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">
+                <p><strong>NOTA:</strong> Este es un reenvío del recibo original enviado el {recibo.fechaEnvio.strftime('%d/%m/%Y %H:%M')}</p>
+            </div>
+            
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                <h3>Detalles de la Transacción</h3>
+                <p><strong>Negocio:</strong> {recibo.transaccion.negocio.nombre}</p>
+                <p><strong>Correlativo:</strong> {recibo.correlativo}</p>
+                <p><strong>Período:</strong> {recibo.transaccion.periodo_pagado}</p>
+                <p><strong>Monto:</strong> Q.{recibo.transaccion.monto:,.2f}</p>
+                <p><strong>Fecha de Transacción:</strong> {recibo.transaccion.fechaTransaccion.strftime('%d/%m/%Y %H:%M')}</p>
+                <p><strong>UUID de Verificación:</strong> {recibo.uuid}</p>
+            </div>
+            
+            <p>El archivo PDF adjunto constituye su recibo oficial. Consérvelo para sus registros contables.</p>
+            
+            <br>
+            <p>Atentamente,<br>
+            <strong>Sistema de Alquileres Comerciales</strong></p>
+        </body>
+        </html>
+        """ 
+
+        # Crear y enviar el email
+        email = EmailMessage(
+            subject=asunto,
+            body=mensaje_html,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[recibo.email],
+        )
+        email.content_subtype = 'html'
+
+        # Adjuntar el PDF
+        with recibo.archivo.open('rb') as archivo:
+            email.attach(f'{recibo.nombre}.pdf', archivo.read(), 'application/pdf')
+
+        # Enviar el correo
+        email.send()
+
+        # Actualizar el mensaje de envio con informacion de reenvio
+        with transaction.atomic:
+            mensaje_anterior = recibo.mensajeEnvio or ""
+            recibo.mensajeEnvio = f"{mensaje_anterior}\nReenviado el {timezone.now().strftime('%d/%m/%Y %H:%M')}"
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Recibo reenviado correctamente por correo electronico.'
+        })
+    
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Error al reenviar el recibo: {str(e)}'
+        })
+    
+def recibo_detalles(request, recibo_id):
+    """
+    Vista para agregar detalles completo del recibo
+    """
+
+    try:
+        recibo = get_object_or_404(Recibo, idRecibo=recibo_id)
+
+        context = {
+            'recibo': recibo,
+            'transaccion': recibo.transaccion,
+            'negocio': recibo.transaccion.negocio,
+            'usuario': recibo.transaccion.negocio.usuario,
+        }
+
+        return render(request, 'negocios/recibo_detalles.html', context)
+    
+    except Exception as e:
+        context = {
+            'error': f'Error al cargar detalles del recibo: {str(e)}'
+        }
+    return render(request, 'negocios/error.html', context)

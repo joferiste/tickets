@@ -1,30 +1,83 @@
 <!-- _tabla_boletas.html -->
 {% for boleta in boletas %}
-<tr class="{% if not boleta.leido %}no-leido{% endif %}">
-    <td class="remitente">{{ boleta.remitente }}</td>
-    <td class="asunto">{{ boleta.asunto|default:"(sin asunto)" }}</td>
-    <td class="fecha">{{ boleta.fecha_recepcion|date:"d/m/Y H:i" }}</td>
-    <td class="estado">{{ boleta.get_estado_validacion_display }} </td>
-         
-    
-    <td class="negocio">
-        {% if boleta.metadata.negocio %}
-            {{ boleta.metadata.negocio }}
-        {% else %}
-            <em>No detectado</em>
-        {% endif %}
+<tr class="inbox-row {% if not boleta.leido %}unread{% endif %} {% if boleta.estado_validacion == 'procesada' %}processed{% endif %}">
+    <td class="col-status">
+        <div class="status-indicator">
+            {% if not boleta.leido %}
+                <span class="status-dot unread"></span>
+                <span class="status-text">Nuevo</span>
+            {% elif boleta.estado_validacion == "procesada" %}
+                <span class="status-dot processed"></span>
+                <span class="status-text">Procesada</span>
+            {% else %}
+                <span class="status-dot pending"></span>
+                <span class="status-text">Pendiente</span>
+            {% endif %}
+        </div>
     </td>
-    
-    {% if boleta.estado_validacion == "procesada" %}
-        <td class="accion">
-            Boleta Procesada
-        </td>
-    {% else %}
-        <td class="accion">
-            <a href="{% url 'administracion:boleta_detalle' boleta.id %}" class="btn-small"> Ver</a>
-        </td>
-    {% endif %}
+    <td class="col-sender">
+        <div class="sender-info">
+            <div class="sender-avatar">
+                {{ boleta.remitente|first|upper }}
+            </div>
+            <div class="sender-details">
+                <div class="sender-name">{{ boleta.remitente|truncatechars:25 }}</div>
+                <div class="sender-email">{{ boleta.remitente }}</div>
+            </div>
+        </div>
+    </td>
+    <td class="col-subject">
+        <div class="subject-content">
+            <div class="subject-text">{{ boleta.asunto|default:"(sin asunto)"|truncatechars:40 }}</div>
+            {% if boleta.imagen %}
+                <span class="attachment-icon">📎</span>
+            {% endif %}
+        </div>
+    </td>
+    <td class="col-date">
+        <div class="date-info">
+            <div class="date-main">{{ boleta.fecha_recepcion|date:"d/m/Y" }}</div>
+            <div class="date-time">{{ boleta.fecha_recepcion|date:"H:i" }}</div>
+        </div>
+    </td>
+    <td class="col-business">
+        <div class="business-info">
+            {% if boleta.metadata.negocio %}
+                <div class="business-detected">
+                    <span class="business-name-text">{{ boleta.metadata.negocio|truncatechars:20 }}</span>
+                </div>
+            {% else %}
+                <div class="business-not-detected">
+                    <span class="business-icon">❓</span>
+                    <span class="business-text">No detectado</span>
+                </div>
+            {% endif %}
+        </div>
+    </td>
+    <td class="col-actions">
+        <div class="action-buttons">
+            {% if boleta.estado_validacion == "procesada" %}
+                <span class="action-completed">
+                    <span class="completed-icon">✅</span>
+                    <span class="completed-text">Completada</span>
+                </span>
+            {% else %}
+                <a href="{% url 'administracion:boleta_detalle' boleta.id %}" class="btn-action btn-view">
+                    <span class="action-text">Ver</span>
+                </a>
+            {% endif %}
+        </div>
+    </td>
 </tr>
 {% empty %}
-<tr>No hay boletas en el sandbox todavía.</tr>
+<tr class="empty-row">
+    <td colspan="6" class="empty-state">
+        <div class="empty-content">
+            <div class="empty-icon">📭</div>
+            <div class="empty-title">No hay boletas en el inbox</div>
+            <div class="empty-description">Las boletas recibidas aparecerán aquí cuando lleguen por correo electrónico.</div>
+        </div>
+    </td>
+</tr>
 {% endfor %}
+</script>

@@ -10,104 +10,176 @@
 <link rel="stylesheet" href="{% static 'administracion/css/boleta_style.css' %}">
 <script src="{% static 'administracion/js/boleta_scripts.js' %}"> </script>
 
-<div class="boleta-container">
-    <div class="info-section-data">
-    <!-- 🔹 Sección de datos del cliente -->
-    <div class="info-section">
-        <h3>Datos obtenidos desde la relación correo - cliente</h3>
-        <div class="info-grid">
-            <div class="info-item"><strong>Negocio:</strong> {{ negocio.nombre }}</div>
-            <div class="info-item"><strong>Responsable:</strong> {{ usuario }}</div>
-            <div class="info-item"><strong>Local(es) arrendado(s):</strong> {{ nombre_local }}</div>
+<div class="page-container">
+    <div class="content-wrapper">
+        
+        <!-- Sección principal dividida en dos columnas -->
+        <div class="main-sections">
             
-            <!-- ✅ CUOTA ORIGINAL (siempre se muestra) -->
-            <div class="info-item">
-                <strong>Cuota mensual (Contrato):</strong> 
-                <span class="monto-base">Q.{{ contexto_cuota.cuota_original|formato_q }}</span>
-            </div>
-            
-            <!-- ✅ MOSTRAR FALTANTE EXISTENTE -->
-            {% if contexto_cuota and contexto_cuota.tiene_faltante_previo %}
-                <div class="info-item faltante-previo">
-                    <strong>⚠️ Pago pendiente de completar:</strong>
-                    <div class="faltante-detalle-completo">
-                        <div><strong>Período:</strong> {{ contexto_cuota.periodo_pendiente|periodo_legible }}</div>
-                        <div><strong>Monto ya pagado:</strong> Q.{{ contexto_cuota.monto_ya_pagado|formato_q }}</div>
-                        <div><strong>Faltante por pagar:</strong> <span class="monto-faltante">Q.{{ contexto_cuota.faltante_previo|formato_q }}</span></div>
-                        <div><strong>Total requerido:</strong> Q.{{ contexto_cuota.monto_total_requerido|formato_q }}</div>
-                        <small class="transaccion-ref">Transacción #{{ contexto_cuota.transaccion_pendiente.idTransaccion }}</small>
+            <!-- Columna izquierda: Datos del cliente -->
+            <div class="left-column">
+                <div class="section-card client-data">
+                    <div class="section-header">
+                        <h3>Datos obtenidos desde la relación correo - cliente</h3>
                     </div>
-                </div>
-            {% endif %}
-            
-            <!-- ✅ CONTEXTO DE MORA (solo si NO hay faltante previo) -->
-            {% if contexto_cuota and contexto_cuota.tiene_ajustes and not contexto_cuota.tiene_faltante_previo %}
-                <div class="info-item contexto-especial">
-                    <strong>Cuota mensual (Ajustada):</strong>
-                    <span class="monto-ajustado">Q.{{ contexto_cuota.cuota_ajustada|formato_q }}</span>
-                    <small class="contexto-detalle">
-                        (+Q.{{ contexto_cuota.diferencia|formato_q }} por {{ contexto_cuota.tipo }})
-                    </small>
+                    <div class="section-content">
+                        <div class="data-grid">
+                            <div class="data-row">
+                                <span class="label">Negocio:</span>
+                                <span class="value">{{ negocio.nombre }}</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="label">Responsable:</span>
+                                <span class="value">{{ usuario }}</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="label">Local(es) arrendado(s):</span>
+                                <span class="value">{{ nombre_local }}</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="label">Cuota mensual (Contrato):</span>
+                                <span class="value amount-base">Q.{{ contexto_cuota.cuota_original|formato_q }}</span>
+                            </div>
+                            
+                            <!-- Faltante previo -->
+                            {% if contexto_cuota and contexto_cuota.tiene_faltante_previo %}
+                                <div class="data-row highlight-warning">
+                                    <span class="label">Pago pendiente de completar:</span>
+                                    <div class="pending-details">
+                                        <div class="pending-item">
+                                            <span class="pending-label">Período:</span>
+                                            <span class="pending-value">{{ contexto_cuota.periodo_pendiente|periodo_legible }}</span>
+                                        </div>
+                                        <div class="pending-item">
+                                            <span class="pending-label">Monto ya pagado:</span>
+                                            <span class="pending-value">Q.{{ contexto_cuota.monto_ya_pagado|formato_q }}</span>
+                                        </div>
+                                        <div class="pending-item">
+                                            <span class="pending-label">Faltante por pagar:</span>
+                                            <span class="pending-value amount-danger">Q.{{ contexto_cuota.faltante_previo|formato_q }}</span>
+                                        </div>
+                                        <div class="pending-item">
+                                            <span class="pending-label">Total requerido:</span>
+                                            <span class="pending-value">Q.{{ contexto_cuota.monto_total_requerido|formato_q }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Ajustes por mora -->
+                            {% if contexto_cuota and contexto_cuota.tiene_ajustes and contexto_cuota.tipo == 'mora' %}
+                                <div class="data-row highlight-warning">
+                                    <span class="label">Cuota mensual (Ajustada):</span>
+                                    <div class="adjusted-amount">
+                                        <span class="value amount-adjusted">Q.{{ contexto_cuota.cuota_ajustada|formato_q }}</span>
+                                        <span class="adjustment-note">(+Q.{{ contexto_cuota.diferencia|formato_q }} por {{ contexto_cuota.tipo }})</span>
+                                    </div>
+                                </div>
+                                {% if contexto_cuota.mensaje_contexto %}
+                                    <div class="context-message warning">
+                                        {{ contexto_cuota.mensaje_contexto }}
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+
+                            <!-- Excedentes en espera -->
+                            {% if contexto_cuota and contexto_cuota.tiene_ajustes and contexto_cuota.tipo == 'excedente_espera' %}
+                                <div class="data-row highlight-info">
+                                    <span class="label">Cuota mensual (Ajustada):</span>
+                                    <div class="adjusted-amount">
+                                        <span class="value amount-success">Q.{{ contexto_cuota.cuota_ajustada|formato_q }}</span>
+                                        <span class="adjustment-note">(-Q.{{ contexto_cuota.diferencia|formato_q }} por excedentes en espera)</span>
+                                    </div>
+                                </div>
+                                <div class="data-row">
+                                    <span class="label">Excedentes en espera:</span>
+                                    <span class="value amount-info">Q.{{ contexto_cuota.excedentes_en_espera|formato_q }}</span>
+                                </div>
+                                {% if contexto_cuota.mensaje_contexto %}
+                                    <div class="context-message info">
+                                        {{ contexto_cuota.mensaje_contexto }}
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
                 
-                {% if contexto_cuota.mensaje_contexto %}
-                    <div class="info-item contexto-mensaje">
-                        <span class="contexto-info">ℹ️ {{ contexto_cuota.mensaje_contexto }}</span>
+                <!-- Botones de acción -->
+                <div class="actions-section">
+                    <div class="actions-grid">
+                        <a href="{% url 'administracion:boleta_detalle' boleta.id %}" class="btn btn-secondary">
+                            <span class="btn-icon">←</span>
+                            <span class="btn-text">Regresar</span>
+                        </a>
+                        <button class="btn btn-primary" onclick="openModal('modal-{{ boleta.id }}')">
+                            <span class="btn-icon">📋</span>
+                            <span class="btn-text">Completar datos desde imagen</span>
+                        </button>
                     </div>
+                </div>
+            </div>
+            
+            <!-- Columna derecha: Datos del correo + Contexto administrativo -->
+            <div class="right-column">
+                <!-- Datos del correo -->
+                <div class="section-card email-data">
+                    <div class="section-header">
+                        <h3>Datos obtenidos desde el correo</h3>
+                    </div>
+                    <div class="section-content">
+                        <div class="data-grid">
+                            <div class="data-row">
+                                <span class="label">Remitente:</span>
+                                <span class="value">{{ boleta.remitente }}</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="label">Fecha de recepción del correo:</span>
+                                <span class="value">{{ boleta.fecha_recepcion }}</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="label">Asunto:</span>
+                                <span class="value">{{ boleta.asunto|default:"(Sin asunto)" }}</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="label">Mensaje:</span>
+                                <span class="value message-content">{{ boleta.mensaje|default:"(Sin mensaje)" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contexto administrativo -->
+                {% if contexto_cuota and contexto_cuota.contexto_admin %}
+                <div class="section-card admin-context {{ contexto_cuota.contexto_admin.class_css }}">
+                    <div class="section-header">
+                        <h3>Contexto para el Administrador</h3>
+                    </div>
+                    <div class="section-content">
+                        <div class="context-title">
+                            <strong>{{ contexto_cuota.contexto_admin.titulo }}</strong> 
+                        </div>
+                        {% if contexto_cuota.contexto_admin.mensaje %}
+                            <div class="context-description">
+                                {{ contexto_cuota.contexto_admin.mensaje }}
+                            </div>
+                        {% endif %}
+                        {% if contexto_cuota.contexto_admin.detalles %}
+                            <div class="context-details">
+                                {% for detalle in contexto_cuota.contexto_admin.detalles %}
+                                    <div class="detail-item">{{ detalle }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
                 {% endif %}
-            {% endif %}
+            </div>
         </div>
-    </div>
-
-    <!-- 🔹 Panel administrativo -->
-    {% if contexto_cuota and contexto_cuota.tiene_ajustes or contexto_cuota.tiene_faltante_previo %}
-    <div class="panel-contexto-admin">
-        <h4>📋 Contexto para el Administrador</h4>
-        <div class="contexto-resumen">
-            
-            {% if contexto_cuota.tiene_ajustes %}
-                <div class="contexto-item tipo-{{ contexto_cuota.tipo }}">
-                    <strong>Situación actual:</strong> 
-                    Esta boleta corresponde a un período que tiene recargo por mora.
-                    <br>
-                    <strong>Período objetivo:</strong> {{ contexto_cuota.periodo_objetivo|periodo_legible }}
-                    <br>
-                    <strong>Monto esperado:</strong> Q.{{ contexto_cuota.cuota_ajustada|formato_q }}
-                </div>
-            {% endif %}
-            
-            {% if contexto_cuota.tiene_faltante_previo %}
-                <div class="contexto-item tipo-faltante">
-                    <strong>Pago pendiente:</strong> 
-                    Existe una transacción incompleta que requiere complemento.
-                    <br>
-                    <strong>Faltante:</strong> Q.{{ contexto_cuota.faltante_previo|formato_q }}
-                    <br>
-                    <strong>Recomendación:</strong> Verificar si esta boleta es un complemento del pago anterior.
-                </div>
-            {% endif %}   
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- 🔹 Botón regresar -->
-    <div class="area-btn">
-        <a href="{% url 'administracion:boleta_detalle' boleta.id %}" class="btn btn-primary">Regresar</a>
     </div>
 </div>
-    <div class="image-section"> 
-        {% if boleta.imagen %}
-            <img src="{{ boleta.imagen.url }}" alt="Boleta" class="detalle-img">
-        {% else %}
-            <em>No hay imagen disponible</em>
-        {% endif %}
-        <div class="area-btn">
-            <button class="btn-confirmar" onclick="openModal('modal-{{ boleta.id }}')">Completar datos desde imagen </button>
-        </div>
-    </div>       
-</div>
 
-    <!-- Modal -->
+<!-- Modal (permanece igual) -->
 <div id="boletaModal" class="modal hidden">
     <div class="modal-inner"> 
     <!-- Imagen y controles -->
@@ -128,7 +200,7 @@
         <!-- Formulario -->
         <div class="modal-form">
             <h2>Procesar Boleta</h2>
-            <form id="procesarBoletaForm"method="POST" action="{% url 'administracion:procesar_boleta' boleta.id %}">
+            <form id="procesarBoletaForm" method="POST" action="{% url 'administracion:procesar_boleta' boleta.id %}">
                 {% csrf_token %}
                 {{ form.as_p}}
 
@@ -141,13 +213,15 @@
                 </select>
 
                 <label>Número de Boleta</label>
-                <input type="text" name="numeroBoleta">
+                <input type="text" name="numeroBoleta" id="numeroBoleta" inputmode="numeric" autocomplete="off"
+                            pattern="^\d{4,20}$" title="Ingrese sólo dígitos (4 a 10 caracteres)" placeholder="Ingrese sólo dígitos (4 a 10 caracteres)" required>
 
                 <label for="fechaDeposito">Fecha de depósito</label>
-                <input type="date" name="fechaDeposito" id="fechaDeposito" required>
+                <input type="date" name="fechaDeposito" id="fechaDeposito" max="{{ hoy|date:'Y-m-d' }}" required>
 
                 <label>Monto</label>
-                <input type="text" name="monto" >
+                <input type="text" name="monto" id="monto" inputmode="decimal" autocomplete="off" pattern="^\d+([.,]\d{1,2})?$"
+                            title="Ejemplos validos: 200, 214.5, 214.50" placeholder="Ejemplos válidos: 200, 214.5, 214.50" required>
 
                 <label>Tipo de Pago</label>
                 <select name="tipoPago" required>
@@ -201,7 +275,7 @@
                     Ver Transacción
                 </button>
                 <button onclick="closeResultadoModal()" class="btn-resultado secondary">
-                    Cerrar
+                    Cerrar 
                 </button>
             </div>
             </div>
@@ -220,9 +294,8 @@
                     </a>
                 </div>
             </div>
-
-            
         </div>
     </div>
 </div>
+
 {% endblock %}

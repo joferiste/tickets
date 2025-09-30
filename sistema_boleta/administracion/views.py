@@ -3,7 +3,7 @@ from boletas.views import BoletaSandbox
 from boletas.models import Boleta, EstadoBoleta, TipoPago
 from transacciones.models import Transaccion
 from boletas.services.email_ingestor.email_ingestor import procesar_correos
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.template.loader import render_to_string
 from django.utils import timezone
 from configuracion.models import Banco
@@ -12,20 +12,37 @@ from negocios.models import Negocio
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 import os
+import re 
+import json
 from django.urls import reverse
 from django.conf import settings
 import shutil
 from decimal import Decimal, InvalidOperation
-from boletas.utils.mora import evaluar_pago, procesar_pago_faltante, detectar_pago_complementario
+from boletas.utils.mora import evaluar_pago, procesar_pago_faltante, detectar_pago_complementario, buscar_excedentes_disponibles
 from boletas.utils.mensajes_estados import generar_mensaje
 from email.utils import parsedate_to_datetime
-from datetime import datetime
+from datetime import datetime, date
+from django.views.decorators.cache import cache_control
+from configuracion.models import Configuracion
+from dateutil.relativedelta import relativedelta
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
+from django.db import transaction
+from recibos.models import Recibo, EstadoRecibo
+import unicodedata
 
 def boletas_sandbox(request):
-    boletas = BoletaSandbox.objects.all().order_by('-fecha_recepcion') 
-    return render(request, 'administracion/administracion.html', {
-        'boletas': boletas
-    })
+    boletas = BoletaSandbox.objects.all().order_by('-fecha_recepcion')   
+
+    context = {
+        'boletas': boletas,
+        'total_boletas': boletas.count(),
+        'unread_count': boletas.filter(leido=False).count(),
+        'processed_count': boletas.filter(estado_validacion='procesada').count(),
+        'pending_count': boletas.exclude(estado_validacion='procesada').count(),
+    }
+
+    return render(request, 'administracion/administracion.html', context)
 
 
 def revisar_correos(request):
@@ -81,12 +98,31 @@ def eliminar_sandbox(request, boleta_id):
     else:
         messages.error(request, "Sólo se pueden eliminar boletas rechazadas")
     return redirect('administracion:boleta_detalle', boleta_id=boleta.id)  # O adonde quieras redirigir
- 
 
+def formatear_periodo(periodo_str):
+    """ Convierte 2025-09 a Septiembre de 2025 """
+    meses = {
+        '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril',
+        '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto',
+        '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'
+    }
+
+    ano, mes = periodo_str.split('-')
+
+    return f"{meses[mes]} de {ano}"
+
+def formatear_fecha(fecha_obj):
+    """ Convierte date(2025, 9, 15) a '15 de septiembre de 2025' """
+    meses = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+        5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+        9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+
+    return f"{fecha_obj.day} de {meses[fecha_obj.month]} de {fecha_obj.year}"
 
 
 def revisar_boletas(request, sandbox_id):
-
     sandbox = get_object_or_404(BoletaSandbox, id=sandbox_id)
     
     # Obtener datos básicos
@@ -109,15 +145,14 @@ def revisar_boletas(request, sandbox_id):
         costo_total = sum([ocup.local.nivel.costo for ocup in ocupaciones])
         print("[DEBUG] Costo:", costo_total)
 
-
         if ocupacion:
             fecha_original = sandbox.metadata.get('fecha_original')
             costo_local = ocupacion.local.nivel.costo
             
-            # ✅ PASO 1: Verificar si hay transacciones con faltante PRIMERO
+            # PASO 1: Verificar si hay transacciones con faltante PRIMERO
             transacciones_pendientes = Transaccion.objects.filter(
                 negocio=negocio,
-                estado='espera_complemento',  # Estado específico de faltante
+                estado__in=['espera_confirmacion', 'espera_confirmacion_faltante', 'espera_complemento'],  # Estado específico de faltante
                 faltante__gt=0  # Asegurar que tenga faltante > 0
             ).order_by('-fechaTransaccion')
             
@@ -130,66 +165,248 @@ def revisar_boletas(request, sandbox_id):
                 'tiene_ajustes': False,
                 'tiene_faltante_previo': False,
             }
+
+            excedentes_activos = Transaccion.objects.filter(
+                negocio=negocio,
+                excedente__gt=0,
+                estado__in=['exitosa', 'espera_acreditacion']
+            )
+
+            if excedentes_activos.exists():
+                contexto_cuota.update({
+                    'tiene_excedentes_previos': True,
+                    'excedentes_previos': excedentes_activos,
+                    'mensaje_excedente': f"El negocio tiene Q.{sum(t.excedente for t in excedentes_activos):.2f} de excedentes disponibles."
+                })
             
-            # ✅ CASO 1: HAY FALTANTE PREVIO - Esta es la prioridad
-            if transacciones_pendientes.exists():
-                transaccion_pendiente = transacciones_pendientes.first()
+    config = Configuracion.objects.filter(activo=True).first()
+    dias_sin_recargo = config.dias_sin_recargo if config else 5
+    porcentaje_mora = config.mora_porcentaje if config else 5
+    
+    if fecha_original:
+        try:
+            fecha_boleta = datetime.strptime(fecha_original, "%Y-%m-%d").date()
+        except:
+            fecha_boleta = date.today()
+    else:
+        fecha_boleta = date.today()
+            
+    # CASO 1: HAY FALTANTE PREVIO - Esta es la prioridad
+    if transacciones_pendientes.exists():
+        transaccion_pendiente = transacciones_pendientes.first()
                 
-                print(f"🔍 Debug - Transacción pendiente: {transaccion_pendiente.idTransaccion}")
-                print(f"🔍 Debug - Faltante: {transaccion_pendiente.faltante}")
-                print(f"🔍 Debug - Estado: {transaccion_pendiente.estado}")
+        print(f"🔍 Debug - Transacción pendiente: {transaccion_pendiente.idTransaccion}")
+        print(f"🔍 Debug - Faltante: {transaccion_pendiente.faltante}")
+        print(f"🔍 Debug - Estado: {transaccion_pendiente.estado}")
+                
+        contexto_cuota.update({
+            'tiene_faltante_previo': True,
+            'faltante_previo': transaccion_pendiente.faltante,
+            'transaccion_pendiente': transaccion_pendiente,
+            'periodo_pendiente': transaccion_pendiente.periodo_pagado,
+            'mensaje_faltante': f"Existe un pago pendiente de completar para el período {transaccion_pendiente.periodo_pagado}.",
+            # Información adicional útil
+            'monto_ya_pagado': transaccion_pendiente.monto,
+            'monto_total_requerido': transaccion_pendiente.monto + transaccion_pendiente.faltante,
+            # AGREGAR CONTEXTO PARA ADMIN EN CASO DE FALTANTE
+            'contexto_admin': {
+                'tipo': 'faltante_previo',
+                'titulo': f'Completar pago del período {formatear_periodo(transaccion_pendiente.periodo_pagado)}',
+                'mensaje': f"Existe un pago pendiente que debe completarse antes de procesar nuevos pagos.",
+                'detalles': [
+                    f"Período: {formatear_periodo(transaccion_pendiente.periodo_pagado)}",
+                    f"Monto ya pagado: Q.{transaccion_pendiente.monto:,.2f}",
+                    f"Faltante por cubrir: Q.{transaccion_pendiente.faltante:,.2f}",
+                    f"Monto total requerido: Q.{transaccion_pendiente.monto + transaccion_pendiente.faltante:,.2f}",
+                ],
+                'clase_css': 'contexto-faltante'
+            }
+        })
+
+        print(f"\n Debug -- CONTEXTO FALTANTE PREVIO")
+                
+    # CASO 2: NO HAY FALTANTE, evaluar contexto completo del negocio
+    else:
+        # PASO 1: Determinar el período objetivo considerando excedentes
+        periodo_objetivo = fecha_boleta.strftime("%Y-%m")
+        
+        # Verificar si el período actual ya está cubierto (incluyendo con excedentes)
+        ya_pagados = set(
+            Transaccion.objects.filter(
+                negocio=negocio,
+                estado__in=['exitosa', 'espera_acreditacion', 'espera_confirmacion', 'espera_confirmacion_faltante']
+            ).values_list('periodo_pagado', flat=True)
+        )
+        
+        # Si el período ya está cubierto, buscar el siguiente libre
+        periodo_dt = datetime.strptime(periodo_objetivo, "%Y-%m").date()
+        while periodo_dt.strftime("%Y-%m") in ya_pagados:
+            periodo_dt = periodo_dt.replace(day=1) + relativedelta(months=1)
+        periodo_objetivo = periodo_dt.strftime("%Y-%m")
+        
+        print(f"🔍 Debug - Período objetivo calculado: {periodo_objetivo}")
+        print(f"🔍 Debug - Períodos ya pagados: {ya_pagados}")
+        
+        # PASO 2: Calcular si hay mora basado en el período objetivo (no la fecha de la boleta)
+        año_objetivo, mes_objetivo = map(int, periodo_objetivo.split('-'))
+        limite_periodo_objetivo = date(año_objetivo, mes_objetivo, dias_sin_recargo)
+        
+        # Usar la fecha actual para determinar si hay mora en el período objetivo
+        hoy = date.today()
+        tiene_mora_por_tiempo = hoy > limite_periodo_objetivo
+        
+        print(f"🔍 Debug - Límite período objetivo: {limite_periodo_objetivo}")
+        print(f"🔍 Debug - Tiene mora por tiempo: {tiene_mora_por_tiempo}")
+
+        # PASO 3: Obtener excedentes disponibles para aplicar
+        excedentes_disponibles = buscar_excedentes_disponibles(negocio)
+        total_excedentes_disponibles = sum(t.excedente for t in excedentes_disponibles) if excedentes_disponibles.exists() else Decimal('0')
+        
+        print(f"🔍 Debug - Total excedentes disponibles: {total_excedentes_disponibles}")
+        print(f"🔍 Debug - Excedentes queryset: {list(excedentes_disponibles.values('idTransaccion', 'excedente', 'estado'))}")
+        
+        # PASO 4: Calcular cuota base para el período objetivo
+        cuota_base = costo_total
+        
+        # Si hay mora, calcular cuota con mora
+        if tiene_mora_por_tiempo:
+            mora_decimal = Decimal(str(porcentaje_mora)) / Decimal('100')
+            mora_monto = cuota_base * mora_decimal
+            cuota_con_mora = cuota_base + mora_monto
+        else:
+            cuota_con_mora = cuota_base
+            mora_monto = Decimal('0')
+        
+        # PASO 5: Aplicar excedentes disponibles
+        monto_neto = cuota_con_mora - total_excedentes_disponibles
+        monto_neto = max(monto_neto, Decimal('0'))  # No puede ser negativo
+        
+        # PASO 6: Determinar el contexto según la situación
+        if total_excedentes_disponibles > 0:
+            # HAY EXCEDENTES DISPONIBLES
+            if monto_neto > 0:
+                # Excedentes parciales - aún se debe algo
+                contexto_cuota.update({
+                    'cuota_original': cuota_base,
+                    'tiene_ajustes': True,
+                    'tipo': 'excedente_aplicado',
+                    'cuota_con_mora': cuota_con_mora if tiene_mora_por_tiempo else None,
+                    'mora_monto': mora_monto if tiene_mora_por_tiempo else None,
+                    'excedentes_disponibles': total_excedentes_disponibles,
+                    'monto_neto_a_pagar': monto_neto,
+                    'cuota_ajustada': monto_neto,
+                    'diferencia': total_excedentes_disponibles,
+                    'periodo_objetivo': periodo_objetivo,
+                    'mensaje_contexto': f"Se aplicarán Q.{total_excedentes_disponibles:.2f} de excedentes al período {periodo_objetivo}.",
+                    'contexto_admin': {
+                        'tipo': 'excedente_aplicado',
+                        'titulo': f'Excedentes aplicados al período: {formatear_periodo(periodo_objetivo)}',
+                        'mensaje': f"Se aplicarán excedentes disponibles para cubrir parte del pago.",
+                        'detalles': [
+                            f"Período: {formatear_periodo(periodo_objetivo)}",
+                            f"Cuota base: Q.{cuota_base:,.2f}",
+                            f"Mora aplicada: Q.{mora_monto:,.2f}" if tiene_mora_por_tiempo else "Sin mora",
+                            f"Total requerido: Q.{cuota_con_mora:,.2f}",
+                            f"Excedentes aplicados: Q.{total_excedentes_disponibles:,.2f}",
+                            f"Monto neto a pagar: Q.{monto_neto:.2f}"
+                        ],
+                        'clase_css': 'contexto-excedente-aplicado'
+                    }
+                })
+            else:
+                # Excedentes cubren todo - pago completamente cubierto
+                contexto_cuota.update({
+                    'cuota_original': cuota_base,
+                    'tiene_ajustes': True,
+                    'tipo': 'cubierto_por_excedentes',
+                    'cuota_con_mora': cuota_con_mora if tiene_mora_por_tiempo else None,
+                    'excedentes_disponibles': total_excedentes_disponibles,
+                    'excedente_restante': total_excedentes_disponibles - cuota_con_mora,
+                    'monto_neto_a_pagar': Decimal('0'),
+                    'cuota_ajustada': Decimal('0'),
+                    'diferencia': cuota_con_mora,
+                    'periodo_objetivo': formatear_periodo(periodo_objetivo),
+                    'mensaje_contexto': f"El período {formatear_periodo(periodo_objetivo)} está completamente cubierto por excedentes.",
+                    'contexto_admin': {
+                        'tipo': 'cubierto_por_excedentes',
+                        'titulo': f'Período {formatear_periodo(periodo_objetivo)} cubierto por excedentes',
+                        'mensaje': f"Los excedentes disponibles cubren completamente el pago de este período.",
+                        'detalles': [
+                            f"Período objetivo: {formatear_periodo(periodo_objetivo)}",
+                            f"Cuota base: Q.{cuota_base:,.2f}",
+                            f"Mora aplicada: Q.{mora_monto:,.2f}" if tiene_mora_por_tiempo else "Sin mora",
+                            f"Total requerido: Q.{cuota_con_mora:,.2f}",
+                            f"Excedentes disponibles: Q.{total_excedentes_disponibles:,.2f}",
+                            f"Excedente restante: Q.{total_excedentes_disponibles - cuota_con_mora:,.2f}",
+                            "Monto a pagar: Q.0.00"
+                        ],
+                        'clase_css': 'contexto-cubierto'
+                    }
+                })
+        else:
+            # NO HAY EXCEDENTES - Lógica original pero actualizada
+            if tiene_mora_por_tiempo:
+                # MORA APLICADA
+                contexto_cuota.update({
+                    'cuota_original': cuota_base,
+                    'tiene_ajustes': True,
+                    'tipo': 'mora',
+                    'cuota_ajustada': cuota_con_mora,
+                    'diferencia': mora_monto,
+                    'mora_monto': mora_monto,
+                    'periodo_objetivo': periodo_objetivo,
+                    'mensaje_contexto': f"Recargo por mora del {porcentaje_mora}% aplicado al período {formatear_periodo(periodo_objetivo)}.",
+                    'contexto_admin': {
+                        'tipo': 'mora',
+                        'titulo': f'Recargo por Mora - Período {formatear_periodo(periodo_objetivo)}',
+                        'mensaje': f"Se aplica recargo por mora al período: {formatear_periodo(periodo_objetivo)}.",
+                        'detalles': [
+                            f"Período: {formatear_periodo(periodo_objetivo)}",
+                            f"Cuota base: Q.{cuota_base:,.2f}",
+                            f"Recargo aplicado: {porcentaje_mora}%",
+                            f"Monto de mora: Q.{mora_monto:,.2f}",
+                            f"Total a pagar: Q.{cuota_con_mora:,.2f}",
+                            f"Límite de pago: {formatear_fecha(limite_periodo_objetivo)}"
+                        ],
+                        'clase_css': 'contexto-mora'
+                    }
+                })
+                print(f"\n🔍 Debug - CONTEXTO MORA APLICADO")
+            else:
+                # AL DÍA
+                ultima_transaccion = Transaccion.objects.filter(
+                    negocio=negocio,
+                    estado='exitosa'
+                ).order_by('-fechaTransaccion').first()
                 
                 contexto_cuota.update({
-                    'tiene_faltante_previo': True,
-                    'faltante_previo': transaccion_pendiente.faltante,
-                    'transaccion_pendiente': transaccion_pendiente,
-                    'periodo_pendiente': transaccion_pendiente.periodo_pagado,
-                    'mensaje_faltante': f"Existe un pago pendiente de completar para el período {transaccion_pendiente.periodo_pagado}.",
-                    # Información adicional útil
-                    'monto_ya_pagado': transaccion_pendiente.monto,
-                    'monto_total_requerido': transaccion_pendiente.monto + transaccion_pendiente.faltante,
+                    'cuota_original': cuota_base,
+                    'tiene_ajustes': False,
+                    'periodo_objetivo': periodo_objetivo,
+                    'mensaje_contexto': f"Pago regular para el período {formatear_periodo(periodo_objetivo)}.",
+                    'contexto_admin': {
+                        'tipo': 'al_dia',
+                        'titulo': f'Pago Regular - Período: {formatear_periodo(periodo_objetivo)}',
+                        'mensaje': f"Pago regular sin ajustes para el período: {formatear_periodo(periodo_objetivo)}.",
+                        'detalles': [
+                            f"Período objetivo: {formatear_periodo(periodo_objetivo)}",
+                            f"Cuota mensual: Q.{cuota_base:,.2f}",
+                            f"Plazo de pago: hasta el día {dias_sin_recargo} de cada mes",
+                            f"Última transacción: {ultima_transaccion.fechaTransaccion.strftime('%d-%m-%Y') if ultima_transaccion else 'Sin registros previos'}",
+                            "Sin excedentes previos",
+                            "Sin mora aplicada"
+                        ],
+                        'clase_css': 'contexto-al-dia'
+                    }
                 })
-                
-            # ✅ CASO 2: NO HAY FALTANTE, pero evaluar si hay MORA por tiempo
-            else:
-                # Evaluar la situación actual (sin monto específico, solo para obtener contexto)
-                evaluacion = evaluar_pago(
-                    fecha_original=fecha_original,
-                    forma_pago="efectivo",  # Usar efectivo para obtener el escenario más directo
-                    costo_local=costo_total,
-                    monto_boleta=Decimal("0.00"),  # Monto 0 para solo obtener el contexto
-                    negocio=negocio
-                )
-                
-                cuota_original = evaluacion['costo_total']
-                cuota_con_ajustes = evaluacion['monto_final']
-                
-                print(f"🔍 Debug - Cuota original: {cuota_original}")
-                print(f"🔍 Debug - Cuota con ajustes: {cuota_con_ajustes}")
-                print(f"🔍 Debug - Tiene mora: {evaluacion['mora_aplicada']}")
-                
-                # Actualizar contexto base
-                contexto_cuota['cuota_original'] = cuota_original
-                
-                if cuota_con_ajustes > cuota_original:
-                    # Caso: Hay mora o recargo por tiempo
-                    diferencia = cuota_con_ajustes - cuota_original
-                    contexto_cuota.update({
-                        'tiene_ajustes': True,
-                        'tipo': 'mora',
-                        'cuota_ajustada': cuota_con_ajustes,
-                        'diferencia': diferencia,
-                        'tiene_mora': evaluacion['mora_aplicada'],
-                        'porcentaje_mora': evaluacion.get('mora_monto', Decimal("0.00")),
-                        'periodo_objetivo': evaluacion['periodo_pagado'],
-                        'mensaje_contexto': f"Este negocio tiene un recargo por mora aplicado.",
-                        'comentarios_relevantes': [c for c in evaluacion['comentarios'] if 'mora' in c.lower() or 'plazo' in c.lower()]
-                    })
-    
+                print(f"\n🔍 Debug - CONTEXTO AL DÍA")
+        
+        print(f"🔍 Debug Final - Contexto determinado: {contexto_cuota.get('tipo', 'N/A')}")
+        print(f"🔍 Debug Final - Período objetivo: {periodo_objetivo}")
+
     # Debug final
-    if contexto_cuota:
-        print(f"🔍 Debug Final - tiene_faltante_previo: {contexto_cuota.get('tiene_faltante_previo', False)}")
-        print(f"🔍 Debug Final - tiene_ajustes: {contexto_cuota.get('tiene_ajustes', False)}")
+    print(f"🔍 Debug Final - Contexto tipo: {contexto_cuota.get('contexto_admin', {}).get('tipo', 'N/A')}")
+    print(f"🔍 Debug Final - Tiene ajustes: {contexto_cuota.get('tiene_ajustes', False)}")
     
     # Obtener otros datos necesarios para el template
     tipos_pago = TipoPago.objects.all()
@@ -198,6 +415,7 @@ def revisar_boletas(request, sandbox_id):
     context = {
         'boleta': sandbox,
         'negocio': negocio,
+        'hoy': date.today(),
         'tipos_pago': tipos_pago,
         'bancos': bancos,
         'ocupacion': ocupacion if 'ocupacion' in locals() else None,
@@ -207,18 +425,20 @@ def revisar_boletas(request, sandbox_id):
         # CONTEXTO INFORMATIVO para el administrador
         'contexto_cuota': contexto_cuota,
     }
-    
     return render(request, 'administracion/revision_boleta.html', context)
 
 
-
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def procesar_boleta(request, boleta_id):
+    RE_BOLETA = re.compile(r'^\d{4,10}$')   # solo digitos 4 - 10 
+    RE_MONTO = re.compile(r'^\d+([.,]\d{1,2})?$') # formato 1234, 1234.56. 1234,56
+
     sandbox = get_object_or_404(BoletaSandbox, id=boleta_id)
     negocio_id = sandbox.metadata.get('negocio_id')
     negocio = Negocio.objects.get(idNegocio=negocio_id)
     ocupaciones = OcupacionLocal.objects.filter(negocio=negocio, fecha_fin__isnull=True)
     ocupacion = ocupaciones.first()
-
+    fecha_str = request.POST.get('fechaDeposito')
     # Inicializar transaccion al inicio
     transaccion = None
 
@@ -232,11 +452,68 @@ def procesar_boleta(request, boleta_id):
         })
     
     if request.method == 'POST':
-        monto = request.POST.get('monto', "").replace(",", ".")
-        numero_boleta = request.POST.get('numeroBoleta')
+        monto = (request.POST.get('monto') or '').strip()
+        numero_boleta = (request.POST.get('numeroBoleta') or '').strip()
         banco_id = int(request.POST.get('banco'))
-        fecha_deposito = request.POST.get('fechaDeposito') # Viene del form
+        fecha_str = request.POST.get('fechaDeposito') # Viene del form
         tipo_pago_id = request.POST.get('tipoPago') # Viene del modal final
+
+        try:
+            fecha_deposito = date.fromisoformat(fecha_str)
+        except (TypeError, ValueError):
+            return JsonResponse({
+                'success': False,
+                'tipo': 'error',
+                'mensaje': 'Fecha Invalida',
+                'transaccion_id': None,
+            }, status=400)
+        
+        if fecha_deposito > date.today():
+            return JsonResponse({
+                'success': False,
+                'tipo': 'error',
+                'mensaje': 'No se admiten fechas mayores a la actual',
+                'transaccion_id': None,
+            }, status=400)
+
+        # Validacion numero de boleta
+        if not RE_BOLETA.fullmatch(numero_boleta):
+            return JsonResponse({
+                'success': False,
+                'tipo': 'error',
+                'mensaje': 'Número de boleta inválido, debe contener sólo dígitos',
+                'transaccion_id': None,
+            }, status=400)
+        
+        # Validacion monto
+        if not RE_MONTO.fullmatch(monto):
+            return JsonResponse({
+                'success': False,
+                'tipo': 'error',
+                'mensaje': 'Monto no permitido, sujétese a los parámetros establecidos',
+                'transaccion_id': None,
+            }, status=400)
+        
+        normalized = monto.replace(',', '.')
+
+        try:
+            monto = Decimal(normalized)
+        except (InvalidOperation, ValueError, TypeError):
+            return JsonResponse({
+                'success': False,
+                'tipo': 'error',
+                'mensaje': 'Monto inválido, no se puede interpretar el número',
+                'transaccion_id': None
+            }, status=400)
+        
+        # Regla extra
+        if monto <= 0:
+            return JsonResponse({
+                'success': False,
+                'tipo': 'error',
+                'mensaje': 'El monto debe de ser mayor a 0',
+                'transaccion_id': None
+            }, status=400)
 
         # --------- CASO 2: CAMPOS IMCOMPLETOS ---------
         if not numero_boleta or not banco_id or not tipo_pago_id:
@@ -260,12 +537,20 @@ def procesar_boleta(request, boleta_id):
         fecha_deposito_obj = None
         if fecha_deposito:
             try:
-                fecha_deposito_obj = datetime.strptime(fecha_deposito, "%Y-%m-%d").date()
-            except ValueError:
+                # Si fecha_deposito ya es objeto dato, usarlo directamente
+                if isinstance(fecha_deposito, date):
+                    fecha_deposito_obj = fecha_deposito
+                # Si es string, convertirlo
+                elif isinstance(fecha_deposito, str):
+                    fecha_deposito_obj = datetime.strptime(fecha_deposito, "%Y-%m-%d").date()
+                else:
+                    # Si es otro tipo, intentar convertir a string primero
+                    fecha_deposito_obj = datetime.strptime(str(fecha_deposito), "%Y-%m-%d").date()
+            except (ValueError, TypeError):
                 return JsonResponse({
                     "success": False,
                     "tipo": "error",
-                    "mensaje": "Formato de fecha invalido, usar (AAAA-MM-DD)",
+                    "mensaje": "Formato de fecha inválido, usar (AAAA-MM-DD)",
                     "transaccion_id": None
                 })
             
@@ -423,7 +708,7 @@ def procesar_boleta(request, boleta_id):
                 es_complemetaria=False,
                 fechaDeposito=fecha_deposito_obj
             )
-
+            print(f"Guardando transacción con excedente: {resultado_pago['excedente']}")
             # Crear transacción nueva
             transaccion = Transaccion.objects.create(
                 boleta=nueva_boleta,
@@ -439,6 +724,7 @@ def procesar_boleta(request, boleta_id):
                 fecha_limite_confirmacion=resultado_pago['fecha_lapso_tiempo'],
                 fecha_ingreso_sistema=resultado_pago['fecha_original_conv']
             )
+            
 
             # Guardar mensaje humanizado en la transaccion para usarlo después
             transaccion.mensaje_final = generar_mensaje(resultado_pago, boleta_nombre=nueva_boleta.nombre, complemento=nueva_boleta.es_complemetaria)
@@ -455,7 +741,7 @@ def procesar_boleta(request, boleta_id):
         return JsonResponse({
             'success': False,
             'tipo': 'error',
-            'mensaje': 'ERROR: No se puede procesar la transaccion',
+            'mensaje': 'ERROR: No se puede procesar la transacción',
             'transaccion_id': None
         }, status=500)
 
@@ -521,6 +807,11 @@ def perfil_transaccion(request, transaccion_id):
         and transaccion.monto >= total_a_pagar
     )
 
+    puede_generar_recibo = (
+        transaccion.estado in ["exitosa", "espera_acreditacion"]
+        and transaccion.faltante == 0
+    )
+
     context = {
         "transaccion": transaccion,
         "boleta": boleta,
@@ -531,5 +822,249 @@ def perfil_transaccion(request, transaccion_id):
         "ocultar_mora": es_pago_efectivo_y_completo,
         "periodo_legible": periodo_legible,
         "mensaje_final": transaccion.mensaje_final,
+        "puede_generar_recibo": puede_generar_recibo,
     }
     return render(request, "administracion/perfil_transaccion.html", context)
+
+
+
+@require_POST
+def validar_transaccion(request, transaccion_id):
+    """
+    Vista para validar o rechazar una transaccion pendiente de confirmacion
+    """
+    print(f"Vista llamada con ID:  {transaccion_id}")
+    print(f"Método: {request.method}")
+    print(f"Body: {request.body}")
+    try:
+        # Obtener la transaccion
+        transaccion_obj = get_object_or_404(Transaccion, idTransaccion=transaccion_id)
+
+        # Verificar que la transaccion este en un estado correcto para validar
+        estados_validos = ['espera_confirmacion', 'espera_confirmacion_faltante']
+        if transaccion_obj.estado not in estados_validos:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'La transacción no está en estado válido para confirmación. Estado actual: {transaccion_obj.estado}'
+            })
+        
+        # Parsear el body de la request
+        data = json.loads(request.body)
+        validado = data.get('validado', False)
+
+        # Usar transaccion de base de datos para generar consistencia
+        with transaction.atomic():
+            if validado:
+                # VALIDAR TRANSACCION
+                if transaccion_obj.estado == 'espera_confirmacion_faltante':
+                    #Validó el cheque, pero aun falta dinero -> sigue esperando complemento
+                    transaccion_obj.estado = 'espera_complemento'
+                    mensaje = 'Cheque validado, pendiente complemento de pago'
+
+                    # Cambio interno: forzar cambio de TipoPago a efectivo
+                    try:
+                        tipo_efectivo = TipoPago.objects.get(nombre__iexact='Efectivo')
+                        boleta_obj = transaccion_obj.boleta
+                        boleta_obj.tipoPago = tipo_efectivo
+                        boleta_obj.save(update_fields=['tipoPago'])
+                    except TipoPago.DoesNotExist:
+                        return JsonResponse({
+                            'status': 'error',
+                            'message': "No existe el tipo de pago 'Efectivo'.",
+                        })
+                else:
+                    # Validar transaccion normal
+                    transaccion_obj.estado = 'exitosa'
+                    #Actualizar timestamp
+                    transaccion_obj.ultima_actualizacion = timezone.now()
+
+                    # Si habia excedente, cambiar estado a espera_acreditacion
+                    if transaccion_obj.excedente > 0:
+                        transaccion_obj.estado = 'espera_acreditacion'
+
+                    # Cambio interno: forzar cambio de TipoPago a efectivo
+                    try:
+                        tipo_efectivo = TipoPago.objects.get(nombre__iexact='Efectivo')
+                        boleta_obj = transaccion_obj.boleta
+                        boleta_obj.tipoPago = tipo_efectivo
+                        boleta_obj.save(update_fields=['tipoPago'])
+                    except TipoPago.DoesNotExist:
+                        return JsonResponse({
+                            'status': 'error',
+                            'message': "No existe el tipo de pago 'Efectivo'.",
+                        })
+                
+                    # Cambiar interno: cambiar estado de boleta, de 'en revision' a 'procesada'
+                    try:
+                        estado_original = EstadoBoleta.objects.get(nombre__iexact='Procesada')
+                        boleta_estado = transaccion_obj.boleta
+                        boleta_estado.estado = estado_original
+                        boleta_estado.save(update_fields=['estado'])
+                    except EstadoBoleta.DoesNotExist:
+                        return JsonResponse({
+                            'status': 'error',
+                            'message': "No existe el estado 'procesada'.",
+                        })
+                    
+                    # Agregar comentario de validacion
+                    comentario_validacion = f" Transacción validada el: {timezone.now().strftime('%d/%m/%Y a las %H:%M')}."
+                    transaccion_obj.comentario += comentario_validacion
+                    mensaje = 'Transacción validada correctamente'
+
+            else:
+                # Rechazar transaccion
+                transaccion_obj.estado = 'rechazada'
+                transaccion_obj.ultima_actualizacion = timezone.now()
+
+                # Agregar comentario de rechazo
+                comentario_rechazo = f" Transacción rechazada el: {timezone.now().strftime('%d-%m-%Y a las %H:%M')}."
+                transaccion_obj.comentario += comentario_rechazo
+                mensaje = 'Transacción rechazada.'
+
+                # Si la transaccion tenia excedente, liberarlo (colocarlo disponible)
+                if transaccion_obj.excedente > 0:
+                    transaccion_obj.estado = 'espera_complemento'
+                else:
+                    transaccion_obj.estado = 'exitosa'
+
+                
+            
+            # Generar resumen de pago actualizado
+            resultado_pago = {
+                "estado": transaccion_obj.estado,
+                "forma_pago": "Efectivo" if validado else transaccion_obj.boleta.tipoPago.nombre,
+                "periodo_pagado": transaccion_obj.periodo_pagado,
+                "monto_boleta": transaccion_obj.monto,
+                "faltante": transaccion_obj.faltante,
+                "excedente": transaccion_obj.excedente,
+            }
+
+            nuevo_resumen = generar_mensaje(resultado_pago, boleta_nombre=transaccion_obj.boleta.nombre)
+            transaccion_obj.mensaje_final = nuevo_resumen
+
+
+            # Guardar cambios
+            transaccion_obj.save()
+
+        return JsonResponse({
+            'status': 'success',
+            'message': mensaje,
+            'nuevo_estado': transaccion_obj.estado
+        })
+    
+    except json.JSONDecodeError:
+        return JsonResponse({
+        'status': 'error',
+        'message': 'Error en el formato de los datos inválidos',
+    })
+
+    except Transaccion.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Transacción no encontrada',
+        })
+    
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Error interno en el servidor: {str(e)}'
+        })
+
+def slugify_filename(nombre: str) -> str:
+    # Normalizar (quta tildes)
+    nombre = unicodedata.normalize('NFKD', nombre).encode('ascii', 'ignore').decode(('ascii'))
+    # Reemplazar caracteres no alfanumericos por _
+    nombre = re.sub(r'\W+', '_', nombre)
+    #Limitar longitud
+    return nombre[:25]
+
+
+def generar_recibo(request, transaccion_id):
+    """
+    Vista para generar el recibo oficial de una transacción exitosa
+    """
+    try:
+        # Obtener la transacción
+        transaccion_obj = get_object_or_404(Transaccion, idTransaccion=transaccion_id)
+        
+        estados_hacer_recibo = ['exitosa', 'espera_acreditacion']
+        # Verificar que la transacción esté en estado exitoso o espera_acreditacion
+        if transaccion_obj.estado not in estados_hacer_recibo:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Sólo se pueden generar recibos para transacciones exitosas. Estado actual: {transaccion_obj.estado}'
+            })
+        
+        recibo_existente = Recibo.objects.filter(transaccion=transaccion_obj).first()
+        if recibo_existente:
+            # Si ya existe, descargarlo
+            response = HttpResponse(
+                recibo_existente.archivo.read(),
+                content_type='application/pdf'
+            )
+            response['Content-Disposition'] = f'inline; filename="{recibo_existente.nombre}"'
+            return response
+        
+        # Generar nuevo recibo
+        with transaction.atomic():
+            # Generar correlativo unico
+            ultimo_recibo = Recibo.objects.order_by('-correlativo').first()
+            if ultimo_recibo and ultimo_recibo.correlativo.isdigit():
+                nuevo_correlativo = str(int(ultimo_recibo.correlativo) + 1).zfill(6)
+            else:
+                nuevo_correlativo = "000001"
+
+            #Generar nombre del recibo
+            fecha_actual = timezone.now().strftime('%Y%m%d')
+            negocio_limpio = slugify_filename(transaccion_obj.negocio.nombre)
+            nombre_recibo = f"REC-{nuevo_correlativo}-{fecha_actual}-{negocio_limpio}"
+
+            # Obtener estado inicial de recibo
+            estado_generado, created = EstadoRecibo.objects.get_or_create(
+                nombre='Generado',
+                defaults={'nombre': 'Generado'}
+            )
+
+            # Crear el recibo (esto disparara el signal para generar el PDF)
+            nuevo_recibo = Recibo.objects.create(
+                correlativo=nuevo_correlativo,
+                nombre=nombre_recibo,
+                transaccion=transaccion_obj,
+                email=transaccion_obj.boleta.email,
+                estado=estado_generado
+            )
+
+            # Esperar a que signal genere el PDF
+            nuevo_recibo.refresh_from_db()
+
+            if nuevo_recibo.archivo and nuevo_recibo.archivo.name:
+                try:
+                    response = HttpResponse(
+                        nuevo_recibo.archivo.read(),
+                        content_type='application/pdf'
+                    )
+                    response['Content-Disposition'] = f'inline; filename="{nuevo_recibo.nombre}.pdf"'
+                    return response
+                except ValueError as e:
+                    print(f"Error leyendo archivo: {e}")
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': f"Error al leer el archivo PDF. Signal error: {str(e)}"
+                    })
+            else:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Error al generar el archivo PDF.'
+                })
+            
+    except Transaccion.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Transacción no encontrada'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Error al generar recibo: {str(e)}'
+        })

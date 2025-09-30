@@ -17,15 +17,25 @@ from decouple import config
 import os
 
 
-# ------ Configuracion del correo de entrada ------------
-EMAIL_SERVER = config('EMAIL_SERVER', default='imap.gmail.com')
-EMAIL_PORT = config('EMAIL_PORT', cast=int, default=993)
-EMAIL_USE_SSL = config('EMAIL_USE_SSL', cast=bool, default=True)
+# ------ Configuracion del correo de entrada (Configuración IMAP de entrada de emails) ------------
+IMAP_SERVER = config("IMAP_SERVER", default="imap.gmail.com")
+IMAP_PORT = config("EMAIL_PORT", cast=int, default=993)
+IMAP_USE_SSL = True
+EMAIL_USERNAME = config("EMAIL_USERNAME")
+EMAIL_PASSWORD = config("EMAIL_PASSWORD")
 
-EMAIL_USERNAME = config('EMAIL_USERNAME')
-EMAIL_PASSWORD = config('EMAIL_PASSWORD')
+print("Servidor IMAP ", IMAP_SERVER)
 
-print("Servidor IMAP ", EMAIL_SERVER)
+# ------ Configuracion del correo de salida (Configuración SMTP de salida de emails) ------------
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = config("SMTP_SERVER", default="smtp.gmail.com")
+EMAIL_PORT = config("SMTP_PORT", cast=int, default=465)
+EMAIL_USE_SSL = config("SMTP_USE_SSL", cast=bool, default=True)
+EMAIL_HOST_USER = config("EMAIL_USERNAME")
+EMAIL_HOST_PASSWORD = config("EMAIL_PASSWORD") 
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="EMAIL_HOST_USER")
+
+print("Servidor SMTP ", EMAIL_HOST)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -112,7 +122,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "tickets",
         "USER": "postgres",
-        "PASSWORD": "Algoritmos20*",
+        "PASSWORD": config("BD_PASSWORD"),
         "HOST": "127.0.0.1",
         "PORT": "5432",
     }

@@ -15,4 +15,7 @@ urlpatterns = [
     path('negocio_local/', views.negocio_local, name='negocio_local'),
     path('desasignar_local/<int:ocupacion_id>/', views.desasignar_local, name='desasignar_local'),
     path('<int:pk>/perfil/', views.PerfilNegocioView.as_view(), name='perfil_negocio'),
+    path('enviar_recibo/<int:recibo_id>/', views.enviar_recibo, name='enviar_recibo'),
+    path('reenviar_recibo/<int:recibo_id>/', views.reenviar_recibo, name='reenviar_recibo'),
+    path('recibo_detalles/<int:recibo_id>/', views.recibo_detalles, name='recibo_detalles'),
 ]
