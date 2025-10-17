@@ -1,0 +1,252 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Historial - {{ negocio.nombre }}{% endblock %}
+{% block page_title %} Historial de {{ negocio.nombre }}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'reportes/css/historial.css' %}">
+
+<div class="historial-container">
+    <!-- Header Info -->
+    <div class="info-section">
+        <div class="info-card primary">
+            <div class="info-icon">🏢</div>
+            <div class="info-content">
+                <h4>{{ negocio.nombre }}</h4>
+                <p class="info-detail">{{ negocio.categoria.nombre }}</p>
+                <span class="badge {{ negocio.estado.nombre|lower }}">{{ negocio.estado.nombre }}</span>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-icon">📞</div>
+            <div class="info-content">
+                <h4>Contacto</h4>
+                <p class="info-detail">{{ negocio.email }}</p>
+                <p class="info-detail">{{ negocio.telefono1 }}</p>
+            </div>
+        </div>
+
+        {% if ocupacion_actual %}
+        <div class="info-card">
+            <div class="info-icon">🏪</div>
+            <div class="info-content">
+                <h4>Local Actual</h4>
+                <p class="info-detail">{{ ocupacion_actual.local.nombre }}</p>
+                <p class="info-detail">Desde: {{ ocupacion_actual.fecha_inicio|date:"d/m/Y" }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="info-card">
+            <div class="info-icon">📊</div>
+            <div class="info-content">
+                <h4>Total Registros</h4>
+                <p class="info-value">{{ total_registros }}</p>
+                <p class="info-detail">movimientos</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="graficos-section">
+        <div class="grafico-card grande">
+            <div class="grafico-header">
+                <h3>Línea de Tiempo de Cambios</h3>
+                <p>Evolución de movimientos en el negocio</p>
+            </div>
+            <div class="grafico-container">
+                <div id="chartTimeline" style="width: 100%; height: 300px;"></div>
+            </div>
+        </div>
+
+        <div class="grafico-card">
+            <div class="grafico-header">
+                <h3> Distribución por Tipo</h3>
+                <p>Tipos de cambios registrados</p>
+            </div>
+            <div class="grafico-container">
+                <div id="chartTipos" style="width: 100%; height: 300px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline de Historial -->
+    <div class="timeline-section">
+        <div class="timeline-header">
+            <h3>Historial de Movimientos</h3>
+        </div>
+        
+        <div class="timeline">
+            {% for registro in page_obj %}
+            <div class="timeline-item {{ registro.accion|lower }}">
+                <div class="timeline-marker">
+                    <span class="timeline-icon">
+                        {% if registro.accion == 'CREACION' %}➕
+                        {% elif registro.accion == 'CAMBIO' %}🔄
+                        {% elif registro.accion == 'ACTUALIZACION' %}✏️
+                        {% else %}⚙️{% endif %}
+                    </span>
+                </div>
+                <div class="timeline-content">
+                    <div class="timeline-header-item">
+                        <div class="timeline-title">
+                            <h4>{{ registro.accion }}</h4>
+                            <span class="timeline-date">{{ registro.fechaModificacion|date:"d/m/Y H:i" }}</span>
+                        </div>
+                        <span class="badge-tipo {{ registro.tipoCambio }}">{{ registro.tipoCambio }}</span>
+                    </div>
+                    <p class="timeline-description">{{ registro.descripcion }}</p>
+                    {% if registro.estadoAnterior or registro.estadoNuevo %}
+                    <div class="timeline-estados">
+                        {% if registro.estadoAnterior %}
+                        <span class="estado-badge anterior">{{ registro.estadoAnterior }}</span>
+                        <span class="arrow">→</span>
+                        {% endif %}
+                        {% if registro.estadoNuevo %}
+                        <span class="estado-badge nuevo">{{ registro.estadoNuevo }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <div class="empty-icon">📭</div>
+                <p>No hay registros de historial</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Paginación -->
+        {% if page_obj.has_other_pages %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+            <a href="?page=1" class="page-link">«</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="page-link">‹</a>
+            {% endif %}
+            
+            <span class="page-current">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+            
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="page-link">›</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="page-link">»</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Botón volver -->
+    <div class="actions-section">
+        <a href="{% url 'negocios:perfil_negocio' negocio.idNegocio %}" class="btn-secondary">
+            ← Volver al perfil
+        </a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<script>
+    // Preparar datos del historial
+    const historialData = [
+        {% for registro in page_obj %}
+        {
+            fecha: '{{ registro.fechaModificacion|date:"Y-m-d" }}',
+            accion: '{{ registro.accion }}',
+            tipo: '{{ registro.tipoCambio }}'
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    // Gráfico de Timeline
+    const chartTimeline = echarts.init(document.getElementById('chartTimeline'));
+    
+    // Contar por fecha
+    const fechasCount = {};
+    historialData.forEach(item => {
+        fechasCount[item.fecha] = (fechasCount[item.fecha] || 0) + 1;
+    });
+    
+    const fechas = Object.keys(fechasCount).sort();
+    const valores = fechas.map(f => fechasCount[f]);
+    
+    chartTimeline.setOption({
+        tooltip: {
+            trigger: 'axis'
+        },
+        xAxis: {
+            type: 'category',
+            data: fechas,
+            axisLabel: {
+                rotate: 45
+            }
+        },
+        yAxis: {
+            type: 'value',
+            name: 'Movimientos'
+        },
+        series: [{
+            name: 'Movimientos',
+            type: 'line',
+            data: valores,
+            smooth: true,
+            areaStyle: {
+                color: 'rgba(102, 126, 234, 0.2)'
+            },
+            lineStyle: {
+                color: '#667eea',
+                width: 3
+            },
+            itemStyle: {
+                color: '#667eea'
+            }
+        }]
+    });
+
+    // Gráfico de Tipos
+    const chartTipos = echarts.init(document.getElementById('chartTipos'));
+    
+    // Contar por tipo de cambio
+    const tiposCount = {};
+    historialData.forEach(item => {
+        tiposCount[item.tipo] = (tiposCount[item.tipo] || 0) + 1;
+    });
+    
+    const dataTipos = Object.keys(tiposCount).map(tipo => ({
+        name: tipo,
+        value: tiposCount[tipo]
+    }));
+    
+    chartTipos.setOption({
+        tooltip: {
+            trigger: 'item',
+            formatter: '{b}: {c} ({d}%)'
+        },
+        legend: {
+            orient: 'vertical',
+            left: 'left'
+        },
+        series: [{
+            type: 'pie',
+            radius: '70%',
+            data: dataTipos,
+            emphasis: {
+                itemStyle: {
+                    shadowBlur: 10,
+                    shadowOffsetX: 0,
+                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                }
+            }
+        }]
+    });
+
+    // Responsive
+    window.addEventListener('resize', () => {
+        chartTimeline.resize();
+        chartTipos.resize();
+    });
+</script>
+
+{% endblock %}

@@ -4,105 +4,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %} Home {% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">    
-    <script src="{% static 'core/js/main.js' %}" defer></script>
+    <title>{% block title %}Home{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">  
+    {% block extra_css %}{% endblock %}  
+    <script src="{% static 'core/js/main.js' %}" defer></script> 
 </head>
 <body>
+    {# Redirigir si no esta autenticado #}
+    {% if not user.is_authenticated %}
+        <script> window.location.href = "{% url 'login' %}";</script>
+    {% endif %}
+    <!-- Header -->
     <header class="header">
-        <div class="page-title"> {% block page_title %} Dashboard {% endblock %} </div>
+        <div class="page-title">{% block page_title %}Dashboard{% endblock %}</div>
         <div class="admin-info">
+            <!-- Notificaciones -->
             <div class="notifications">
-                <button class="notif-btn" onclick="toggleNotifications()">
-                    <img src="{% static 'icons/bell.svg' %}" alt="Notificaciones" class="notif-icon" id="notif-icon">
-                    <span class="notif-count" id="notif-count">5</span>
+                <button class="notif-btn" type="button" aria-label="Notificaciones">
+                    <img src="{% static 'icons/bell.svg' %}" alt="Notificaciones" class="notif-icon">
+                    <span class="notif-count">5</span>
                 </button>
             
-                <div class="notif-dropdown" id="notif-dropdown">
-                    <div class="notif-item"> Nueva boleta recibida </div>
-                    <div class="notif-item"> Boleta pendiente de validacion </div>
-                    <div class="notif-item"> Boleta aprobada exitosamente </div>
+                <div class="notif-dropdown">
+                    <div class="notif-header">Notificaciones</div>
+                    <div class="notif-item">
+                        <strong>Nueva boleta recibida</strong>
+                        <span class="notif-time">Hace 5 min</span>
+                    </div>
+                    <div class="notif-item">
+                        <strong>Boleta pendiente de validación</strong>
+                        <span class="notif-time">Hace 15 min</span>
+                    </div>
+                    <div class="notif-item">
+                        <strong>Boleta aprobada exitosamente</strong>
+                        <span class="notif-time">Hace 1 hora</span>
+                    </div>
+                    <div class="notif-footer">
+                        <a href="#" class="notif-view-all">Ver todas</a>
+                    </div>
                 </div>
             </div>
-            <div class="user-status">
+
+            <!-- Usuario -->
+            <a href="{% url 'logout' %}" class="user-status">
                 <span class="user-circle"></span>
-                <span class="username"> Admin </span>
-            </div>
+                <span class="username">{{ user.username }}</span>
+                <span class="logout-text"> Cerrar Sesión </span>
+            </a>
         </div>
     </header>
 
-    <div class="flash-container">
-        {% if messages %}
-            <div class="messages">
-                {% for message in messages %}
-                    <div class="alert {{ message.tags }}">{{ message }}</div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    </div>
+    <!-- Mensajes Flash -->
+    {% if messages %}
+        <div class="flash-container">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                    <button class="alert-close" type="button" aria-label="Cerrar">&times;</button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
 
-    <!-- Sidebar izquierda -->
+    <!-- Contenedor Principal -->
     <div class="main-container">    
         {% load static actives %}
+        
+        <!-- Sidebar -->
         <aside class="sidebar">
-            <a href="{% url 'home' %}"
-                class="{% active 'home' %}"> Dashboard </a>
-            <a href="{% url 'administracion:boletas_sandbox' %}"
-                class="{% active 'boletas_sandbox' %}"> Administración </a>
+            <nav class="sidebar-nav">
+                <a href="{% url 'home' %}" class="sidebar-link {% active 'home' %}">
+                    <span class="sidebar-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
                 
-            <div class="submenu-container">
-                <button class="submenu-toggle" onclick="toggleSubmenu('asignaciones-submenu')">
-                    Asignaciones 
-                </button>
-                <div id="asignaciones-submenu" class="submenu">
-                    <a href="{% url 'usuarios:usuario_negocio' %}"
-                        class="{% active 'usuario_negocio' %}"> Usuarios a Negocios </a>
-                    <a href="{% url 'negocios:negocio_local' %}"
-                        class="{% active 'negocio_local' %}"> Negocios a Locales </a>
-                    <a href="{% url 'locales:orden_local' %}"
-                        class="{% active 'orden_local' %}"> Orden de Locales </a>
-                </div>
-            </div> 
-            
-            <div class="submenu-container">
-                <button class="submenu-toggle" onclick="toggleSubmenu('creaciones-submenu')">
-                    Creaciones 
-                </button>
-                <div id="creaciones-submenu" class="submenu">
-                    <a href="{% url 'usuarios:create_usuario' %}"
-                        class="{% active 'create_usuario' %}"> ➕ Crear Usuario </a>
-                    <a href="{% url 'negocios:create_negocio' %}"
-                        class="{% active 'create_negocio' %}"> 🏪 Crear Negocio </a>
-                    <a href="{% url 'locales:create_local' %}"
-                        class="{% active 'create_local' %}"> 🏪 Crear Local </a>
-                </div>
-            </div> 
+                <a href="{% url 'administracion:boletas_sandbox' %}" class="sidebar-link {% active 'boletas_sandbox' %}">
+                    <span class="sidebar-icon">⚙️</span>
+                    <span>Administración</span>
+                </a>
 
-            <div class="submenu-container">
-                <button class="submenu-toggle" onclick="toggleSubmenu('visualizaciones-submenu')">
-                    Visualizaciones
-                </button>
-                <div id="visualizaciones-submenu" class="submenu">
-                    <a href="{% url 'usuarios:visualizar_usuario' %}"
-                        class="{% active 'visualizar_usuario' %}">  Ver Usuario </a>
-                    <a href="{% url 'negocios:visualizar_negocio' %}"
-                        class="{% active 'visualizar_negocio' %}">  Ver Negocio </a>
-                    <a href="{% url 'locales:visualizar_local' %}"
-                        class="{% active 'visualizar_local' %}">  Ver Local </a>
-                </div>
-            </div> 
-            <a href="{% url 'configuracion:configuracion_sistema' %}"
-                class="{% active 'configuracion_sistema' %}"> Configuración </a>
+                <a href="{% url 'gestion_crud' %}" class="sidebar-link {% active 'gestion_crud' %}">
+                    <span class="sidebar-icon">📋</span>
+                    <span>Gestión CRUD</span>
+                </a>
+                
+                <!-- Submenu Asignaciones -->
+                <div class="submenu-container">
+                    <button class="submenu-toggle" type="button" data-submenu="asignaciones-submenu">
+                        <span class="sidebar-icon">🔗</span>
+                        <span>Asignaciones</span>
+                        <span class="submenu-arrow">▸</span>
+                    </button>
+                    <div class="submenu" data-submenu-id="asignaciones-submenu">
+                        <a href="{% url 'usuarios:usuario_negocio' %}" class="submenu-link {% active 'usuario_negocio' %}">
+                            Usuarios a Negocios
+                        </a>
+                        <a href="{% url 'negocios:negocio_local' %}" class="submenu-link {% active 'negocio_local' %}">
+                            Negocios a Locales
+                        </a>
+                        <a href="{% url 'locales:orden_local' %}" class="submenu-link {% active 'orden_local' %}">
+                            Orden de Locales
+                        </a>
+                    </div>
+                </div>  
+                
+                <a href="{% url 'historiales:dashboard_metricas' %}" class="sidebar-link {% active 'dashboard_metricas' %}">
+                    <span class="sidebar-icon">📊</span>
+                    <span>Análisis y métricas</span>
+                </a>
+
+                <a href="{% url 'reportes:consolidado_ingresos' %}" class="sidebar-link {% active 'consolidado_ingresos' %}">
+                    <span class="sidebar-icon">📈</span>
+                    <span>Reportes</span>
+                </a>
+
+                <a href="{% url 'configuracion:configuracion_sistema' %}" class="sidebar-link {% active 'configuracion_sistema' %}">
+                    <span class="sidebar-icon">🔧</span>
+                    <span>Configuración</span>
+                </a>
+
+
+            </nav>
         </aside>
 
-        <!-- Contenido dinamico -->
-        <main>
+        <!-- Contenido Principal -->
+        <main class="main-container">
             {% block content %}         
             {% endblock %}  
-            
         </main>  
-        
     </div>
-{% block extra_scripts %} {% endblock %}
+
+    {% block extra_scripts %}{% endblock %}
 </body>
 </html>

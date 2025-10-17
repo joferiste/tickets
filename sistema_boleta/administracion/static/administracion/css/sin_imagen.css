@@ -1,0 +1,54 @@
+.sandbox-container {
+    margin-left: 270px;
+    margin-top: 200px;
+}
+
+.alerta-sin-imagen {
+        max-width: 650px;
+        margin: 35px auto;
+        background: linear-gradient(135deg, #fff5e6 0%, #ffe8cc 100%);
+        border: 3px solid #ff9800;
+        border-radius: 12px;
+        padding: 35px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(255, 152, 0, 0.1);
+    }
+
+    .icono-alerta {
+        font-size: 60px;
+        margin-bottom: 15px;
+    }
+
+    .titulo-alerta {
+        color: #e65100;
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 15px;
+    }
+
+    .mensaje-alerta {
+        color: #5d4037;
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 25px;
+    }
+
+    .btn-volver {
+        background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-volver:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);
+        color: white;
+    }

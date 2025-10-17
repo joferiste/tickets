@@ -32,7 +32,7 @@ def procesar_correos():
         return 0
     
     ids = mensajes[0].split()
-    print("[DEBUG] Correos no leidos encontrados: {len(ids)}")
+    print(f"[DEBUG] Correos no leidos encontrados: {len(ids)}")
     
     count = 0
     for num in ids:

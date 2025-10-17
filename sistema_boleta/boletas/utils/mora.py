@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404
 from boletas.models import EstadoBoleta
 from django.utils import timezone
 from django.db.models import Q
+from boletas.utils.mensajes_estados import generar_mensaje
 
 def evaluar_pago(fecha_original, forma_pago, costo_local, monto_boleta, negocio=None):
     fecha_original_conv = parsedate_to_datetime(fecha_original)
@@ -36,9 +37,9 @@ def evaluar_pago(fecha_original, forma_pago, costo_local, monto_boleta, negocio=
             "monto_original_sin_excedentes": Decimal(costo_local)
         }
 
-    dias_sin_recargo   = int(config.dias_sin_recargo or 10)     
-    mora_porcentaje    = Decimal(config.mora_porcentaje or 0)
-    dias_confirmacion  = int(getattr(config, "dias_confirmacion", 3))
+    dias_sin_recargo   = int(config.dias_sin_recargo or 5)     
+    mora_porcentaje    = Decimal(config.mora_porcentaje or 5)
+    dias_confirmacion  = int(config.dias_confirmacion_bancaria or 5)
 
     # Parsear fecha_original y asegurar tzinfo
     try:
@@ -146,10 +147,10 @@ def evaluar_pago(fecha_original, forma_pago, costo_local, monto_boleta, negocio=
 
     # Agregar comentarios sobre excedentes aplicados 
     if excedentes_aplicados > 0:
-        comentarios.append(f"Se aplicaron Q.{excedentes_aplicados:.2f} de excedentes previos.")
+        comentarios.append(f"Se aplicaron Q.{excedentes_aplicados:,.2f} de excedentes previos.")
         for detalle in detalle_excedentes:
             comentarios.append(
-                f"• Q.{detalle['monto_aplicado']:.2f} del período {detalle['periodo_origen']} "
+                f"• Q.{detalle['monto_aplicado']:,.2f} del período {detalle['periodo_origen']} "
                 f"(Trans. #{detalle['transaccion_id']})"
             )
 
@@ -169,9 +170,9 @@ def evaluar_pago(fecha_original, forma_pago, costo_local, monto_boleta, negocio=
         excedente = (monto_boleta - monto_final_ajustado).quantize(Decimal("0.01"))
 
         if mora_aplicada:
-            comentarios.append(f"Pago con mora {mora_porcentaje}% aplicada. Sobrepago de Q.{excedente:.2f}.")
+            comentarios.append(f"Pago con mora {mora_porcentaje}% aplicada. Sobrepago de Q.{excedente:,.2f}.")
         else:
-            comentarios.append(f"Pago con excedente de Q.{excedente:.2f}")
+            comentarios.append(f"Pago con excedente de Q.{excedente:,.2f}")
 
         # Determina el estado según la forma de pago
         if forma_pago.lower() == "efectivo":
@@ -265,6 +266,7 @@ def procesar_pago_faltante(boleta, transaccion_original):
 
     config = Configuracion.objects.filter(activo=True).first()
     mora_porcentaje = Decimal(config.mora_porcentaje or 0)
+
     # 1. Marcar boleta como complementaria
     boleta.es_complemetaria = True
     boleta.save(update_fields=['es_complemetaria'])
@@ -332,7 +334,26 @@ def procesar_pago_faltante(boleta, transaccion_original):
             comentarios_finales += f" {comentario}"
     
     transaccion_original.comentario = comentarios_finales
+
+    # Se generara el mensaje desde aca
+    resultado_pago_para_mensaje = {
+        "estado": transaccion_original.estado,
+        "forma_pago": forma_pago,
+        "periodo_pagado": transaccion_original.periodo_pagado,
+        "monto_boleta": transaccion_original.monto,
+        "faltante": transaccion_original.faltante,
+        "excedente": transaccion_original.excedente,
+        "mora_aplicada": transaccion_original.mora_monto > 0.
+    }
+
+    transaccion_original.mensaje_final = generar_mensaje(
+        resultado_pago_para_mensaje,
+        boleta_nombre=boleta_original.nombre,
+        complemento=True
+    )
+
     transaccion_original.ultima_actualizacion = timezone.now()
+
     transaccion_original.save()
     return True  # Indica que se procesó como complementaria
 
@@ -356,7 +377,7 @@ def dentro_plazo_complemento(fecha_original):
 
     # Obtener configuración para días de confirmación
     config = Configuracion.objects.filter(activo=True).first()
-    dias_confirmacion = int(getattr(config, "dias_confirmacion", 3)) if config else 3
+    dias_confirmacion = int(config.dias_confirmacion_bancaria or 5)
     
     plazo_maximo = conv_fecha + timedelta(days=dias_confirmacion)
 

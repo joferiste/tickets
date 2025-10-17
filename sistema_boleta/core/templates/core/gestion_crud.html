@@ -1,0 +1,148 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Gestión CRUD{% endblock %}
+{% block page_title %}📋 Gestión CRUD{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/css/gestion_crud.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="crud-container">
+    
+    <!-- Tabs principales: Crear / Visualizar -->
+    <div class="tabs-principal">
+        <button class="tab-btn active" data-tab="crear">
+            ➕ Crear
+        </button>
+        <button class="tab-btn" data-tab="visualizar">
+            👁️ Visualizar
+        </button>
+    </div>
+
+    <!-- SECCIÓN: CREAR -->
+    <div class="tab-content active" data-content="crear">
+        <div class="crud-header">
+            <h2>Crear Nuevo Registro</h2>
+            <p>Selecciona el tipo de registro que deseas crear</p>
+        </div>
+
+        <div class="cards-grid">
+            <!-- Card Usuario -->
+            <a href="{% url 'usuarios:create_usuario' %}" class="crud-card usuario">
+                <div class="card-icon">👤</div>
+                <div class="card-content">
+                    <h3>Usuario</h3>
+                    <p>Crear nuevo usuario del sistema</p>
+                    <span class="card-arrow">→</span>
+                </div>
+            </a>
+
+            <!-- Card Negocio -->
+            <a href="{% url 'negocios:create_negocio' %}" class="crud-card negocio">
+                <div class="card-icon">🏢</div>
+                <div class="card-content">
+                    <h3>Negocio</h3>
+                    <p>Registrar nuevo negocio</p>
+                    <span class="card-arrow">→</span>
+                </div>
+            </a>
+
+            <!-- Card Local -->
+            <a href="{% url 'locales:create_local' %}" class="crud-card local">
+                <div class="card-icon">🏪</div>
+                <div class="card-content">
+                    <h3>Local</h3>
+                    <p>Crear nuevo local comercial</p>
+                    <span class="card-arrow">→</span>
+                </div>
+            </a>
+        </div>
+
+        <!-- Resumen de creaciones recientes -->
+        <div class="resumen-section">
+            <h3>📊 Últimas Creaciones</h3>
+            <div class="resumen-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Usuarios creados (último mes)</span>
+                    <span class="stat-value">{{ stats.usuarios_mes|default:0 }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Negocios creados (último mes)</span>
+                    <span class="stat-value">{{ stats.negocios_mes|default:0 }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Locales creados (último mes)</span>
+                    <span class="stat-value">{{ stats.locales_mes|default:0 }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN: VISUALIZAR -->
+    <div class="tab-content" data-content="visualizar">
+        <div class="crud-header">
+            <h2>Visualizar Registros</h2>
+            <p>Consulta y administra los registros existentes</p>
+        </div>
+
+        <div class="cards-grid">
+            <!-- Card Ver Usuarios -->
+            <a href="{% url 'usuarios:visualizar_usuario' %}" class="crud-card usuario">
+                <div class="card-icon">👥</div>
+                <div class="card-content">
+                    <h3>Usuarios</h3>
+                    <p>Ver lista completa de usuarios</p>
+                    <span class="card-badge">{{ stats.total_usuarios|default:0 }}</span>
+                    <span class="card-arrow">→</span>
+                </div>
+            </a>
+
+            <!-- Card Ver Negocios -->
+            <a href="{% url 'negocios:visualizar_negocio' %}" class="crud-card negocio">
+                <div class="card-icon">🏢</div>
+                <div class="card-content">
+                    <h3>Negocios</h3>
+                    <p>Ver lista completa de negocios</p>
+                    <span class="card-badge">{{ stats.total_negocios|default:0 }}</span>
+                    <span class="card-arrow">→</span>
+                </div>
+            </a>
+
+            <!-- Card Ver Locales -->
+            <a href="{% url 'locales:visualizar_local' %}" class="crud-card local">
+                <div class="card-icon">🏪</div>
+                <div class="card-content">
+                    <h3>Locales</h3>
+                    <p>Ver lista completa de locales</p>
+                    <span class="card-badge">{{ stats.total_locales|default:0 }}</span>
+                    <span class="card-arrow">→</span>
+                </div>
+            </a>
+        </div>
+
+        <!-- Accesos rápidos adicionales -->
+        <div class="accesos-rapidos">
+            <h3>⚡ Accesos Rápidos</h3>
+            <div class="accesos-grid">
+                <a href="{% url 'usuarios:usuario_negocio' %}" class="acceso-item">
+                    <span class="acceso-icon">🔗</span>
+                    <span class="acceso-text">Asignar Usuario a Negocio</span>
+                </a>
+                <a href="{% url 'negocios:negocio_local' %}" class="acceso-item">
+                    <span class="acceso-icon">🔗</span>
+                    <span class="acceso-text">Asignar Negocio a Local</span>
+                </a>
+                <a href="{% url 'locales:orden_local' %}" class="acceso-item">
+                    <span class="acceso-icon">📍</span>
+                    <span class="acceso-text">Ordenar Locales</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="{% static 'core/js/gestion_crud.js' %}"></script>
+{% endblock %}

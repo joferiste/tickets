@@ -1,0 +1,310 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% load reportes_filters %}
+
+{% block title %}Consolidado de Ingresos{% endblock %}
+{% block page_title %}Consolidado de Ingresos{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'reportes/css/consolidado_ingresos.css' %}">
+<div class="reportes-container">
+    
+    <!-- Filtros -->
+    <div class="filtros-section">
+        <form method="GET" class="filtros-form">
+            <div class="filtro-group">
+                <label for="month">Mes:</label>
+                <select name="month" id="month" class="filtro-select">
+                    {% for mes in meses %}
+                        <option value="{{ mes.num }}" {% if mes.num == month %}selected{% endif %}>
+                            {{ mes.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filtro-group">
+                <label for="year">Año:</label>
+                <select name="year" id="year" class="filtro-select">
+                    {% for y in years %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>
+                            {{ y }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <button type="submit" class="btn-filtrar">Aplicar</button>
+        </form>
+        
+        <div class="periodo-actual">
+            <h3>{{ mes_nombre }} {{ year }}</h3>
+        </div>
+    </div>
+
+    <!-- Cards de Métricas Principales -->
+    <div class="metricas-grid">
+        <!-- Total de Ingresos -->
+        <div class="metric-card primary">
+            <div class="metric-icon">💰</div>
+            <div class="metric-content">
+                <h4>Ingresos Totales</h4>
+                <p class="metric-value">{{ resumen.ingresos.total|formatear_moneda }}</p>
+                <span class="metric-change {% if resumen.comparacion.porcentaje_cambio >= 0 %}positive{% else %}negative{% endif %}">
+                    {{ resumen.comparacion.porcentaje_cambio|formatear_porcentaje }} vs mes anterior
+                </span>
+            </div>
+        </div>
+
+        <!-- Transacciones -->
+        <div class="metric-card">
+            <div class="metric-icon">📝</div>
+            <div class="metric-content">
+                <h4>Transacciones</h4>
+                <p class="metric-value">{{ resumen.ingresos.cantidad_transacciones }}</p>
+                <span class="metric-label">Exitosas este mes</span>
+            </div>
+        </div>
+
+        <!-- Promedio por Transacción -->
+        <div class="metric-card">
+            <div class="metric-icon">📊</div>
+            <div class="metric-content">
+                <h4>Promedio</h4>
+                <p class="metric-value">{{ resumen.ingresos.promedio_por_transaccion|formatear_moneda }}</p>
+                <span class="metric-label">Por transacción</span>
+            </div>
+        </div>
+
+        <!-- Moras -->
+        <div class="metric-card {% if resumen.mora.transacciones_con_mora > 0 %}warning{% endif %}">
+            <div class="metric-icon">⚠️</div>
+            <div class="metric-content">
+                <h4>Pagos con Mora</h4>
+                <p class="metric-value">{{ resumen.mora.transacciones_con_mora }}</p>
+                <span class="metric-label">Total: {{ resumen.mora.total_mora|formatear_moneda }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="graficos-section">
+        <!-- Gráfico de Evolución Diaria -->
+        <div class="grafico-card grande">
+            <div class="grafico-header">
+                <h3>📈 Evolución de Ingresos</h3>
+                <p>Ingresos diarios y acumulado del mes</p>
+            </div>
+            <div class="grafico-container">
+                <canvas id="chartEvolucion"></canvas>
+            </div>
+        </div>
+
+        <!-- Gráfico de Top Negocios -->
+        <div class="grafico-card">
+            <div class="grafico-header">
+                <h3>🏆 Top Negocios</h3>
+                <p>Mayores ingresos del mes</p>
+            </div>
+            <div class="grafico-container">
+                <canvas id="chartNegocios"></canvas>
+            </div>
+        </div>
+
+        <!-- Gráfico de Estados -->
+        <div class="grafico-card">
+            <div class="grafico-header">
+                <h3>🎯 Estados de Transacciones</h3>
+                <p>Distribución por estado</p>
+            </div>
+            <div class="grafico-container">
+                <canvas id="chartEstados"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Negocios -->
+    <div class="tabla-section">
+        <div class="tabla-header">
+            <h3>📋 Detalle por Negocio</h3>
+        </div>
+        <div class="tabla-container">
+            <table class="reportes-table">
+                <thead>
+                    <tr>
+                        <th>Negocio</th>
+                        <th>Total Ingresado</th>
+                        <th>Transacciones</th>
+                        <th>Con Mora</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for negocio in resumen.por_negocio %}
+                    <tr>
+                        <td class="negocio-nombre">{{ negocio.negocio_nombre }}</td>
+                        <td class="monto">{{ negocio.total|formatear_moneda }}</td>
+                        <td class="centro">{{ negocio.cantidad }}</td>
+                        <td class="centro">{{ negocio.con_mora }}</td>
+                        <td class="centro">
+                            {% if negocio.estado == 'al_dia' %}
+                                <span class="badge success">Al día</span>
+                            {% else %}
+                                <span class="badge warning">Con mora</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            No hay transacciones registradas para este período
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if resumen.por_negocio %}
+                <tfoot>
+                    <tr class="total-row">
+                        <td><strong>TOTAL</strong></td>
+                        <td class="monto"><strong>{{ resumen.ingresos.total|formatear_moneda }}</strong></td>
+                        <td class="centro"><strong>{{ resumen.ingresos.cantidad_transacciones }}</strong></td>
+                        <td class="centro"><strong>{{ resumen.mora.transacciones_con_mora }}</strong></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+
+    <!-- Estadísticas de Mora -->
+    {% if resumen.mora.transacciones_con_mora > 0 %}
+    <div class="mora-section">
+        <div class="mora-card">
+            <h3>⚠️ Análisis de Moras</h3>
+            <div class="mora-stats">
+                <div class="mora-stat">
+                    <span class="mora-label">Total cobrado en moras:</span>
+                    <span class="mora-value">{{ resumen.mora.total_mora|formatear_moneda }}</span>
+                </div>
+                <div class="mora-stat">
+                    <span class="mora-label">Promedio de días de retraso:</span>
+                    <span class="mora-value">{{ resumen.mora.promedio_dias_retraso }} días</span>
+                </div>
+                <div class="mora-stat">
+                    <span class="mora-label">Negocios con mora:</span>
+                    <span class="mora-value">{{ resumen.mora.negocios_con_mora }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    // Gráfico de Evolución Diaria
+    const ctxEvolucion = document.getElementById('chartEvolucion').getContext('2d');
+    new Chart(ctxEvolucion, {
+        type: 'line',
+        data: {
+            labels: {{ chart_evolucion.labels|safe }},
+            datasets: [
+                {
+                    label: 'Ingresos Diarios',
+                    data: {{ chart_evolucion.datos_diarios|safe }},
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Acumulado',
+                    data: {{ chart_evolucion.datos_acumulados|safe }},
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'Q.' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Gráfico de Top Negocios
+    const ctxNegocios = document.getElementById('chartNegocios').getContext('2d');
+    new Chart(ctxNegocios, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_negocios.labels|safe }},
+            datasets: [{
+                label: 'Ingresos',
+                data: {{ chart_negocios.datos|safe }},
+                backgroundColor: '#667eea'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'Q.' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Gráfico de Estados
+    const ctxEstados = document.getElementById('chartEstados').getContext('2d');
+    new Chart(ctxEstados, {
+        type: 'doughnut',
+        data: {
+            labels: {{ chart_estados.labels|safe }},
+            datasets: [{
+                data: {{ chart_estados.datos|safe }},
+                backgroundColor: {{ chart_estados.colores|safe }}
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+</script>
+
+{% endblock %}

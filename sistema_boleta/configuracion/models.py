@@ -28,15 +28,21 @@ class Configuracion(models.Model):
         (15, "15%"), 
         (20, "20%"),
     ]
-
     DIAS_SIN_RECARGO_CHOICES = [
         (5, "5 días"),
         (10, "10 días"),
         (15, "15 días"),
         (20, "20 días"),
     ]
+    DIAS_CONFIRMACION_CHOICES = [
+        (3, "3 días"),
+        (5, "5 días"),
+        (8, "8 días"),
+    ]
+
     mora_porcentaje = models.IntegerField(choices=MORA_CHOICES, default=5)
     dias_sin_recargo = models.IntegerField(choices=DIAS_SIN_RECARGO_CHOICES, default=5)
+    dias_confirmacion_bancaria = models.IntegerField(choices=DIAS_CONFIRMACION_CHOICES, default=5)
     banco_principal = models.ForeignKey(Banco, on_delete=models.CASCADE, related_name="configuraciones")
     fechaCreacion = models.DateTimeField(auto_now_add=True)
     activo = models.BooleanField(default=True)

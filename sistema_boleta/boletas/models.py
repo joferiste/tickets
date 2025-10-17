@@ -10,6 +10,7 @@ class BoletaSandbox(models.Model):
         ('pendiente', 'Pendiente'),
         ('duplicada', 'Posible Duplicado'),
         ('procesada', 'Procesada'),
+        ('sin_imagen', 'Sin Imagen')
     ] 
     remitente = models.EmailField()
     asunto = models.CharField(max_length=255, blank=True)
@@ -23,6 +24,7 @@ class BoletaSandbox(models.Model):
     estado_validacion = models.CharField(max_length=30, choices=ESTADOS_VALIDACION, default='pendiente')
     comentarios_validacion = models.CharField(max_length=355)
     leido = models.BooleanField(default=False)
+    fecha_eliminacion = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de eliminacion programada")
 
     # Para validaciones
     message_id = models.CharField(max_length=255, null=True, blank=True, db_index=True)
@@ -99,7 +101,7 @@ class Boleta(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):  
-        return f"{self.nombre} - {self.banco.nombre}"
+        return f"{self.nombre}"
     
     class Meta:
         verbose_name = "Boleta"

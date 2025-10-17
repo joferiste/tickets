@@ -20,7 +20,7 @@ class Categoria(models.Model):
     def __str__(self):
         return self.nombre
     
-    
+     
 class Negocio(models.Model):
     idNegocio = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)

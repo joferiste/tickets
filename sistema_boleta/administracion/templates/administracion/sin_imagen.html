@@ -1,0 +1,34 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %} Correo electrónico sin imagen {% endblock %}
+
+{% block page_title %} Correo electrónico sin imagen adjunta {% endblock %}
+
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'administracion/css/sin_imagen.css' %}">
+
+<div class="sandbox-container">
+    <div class="alerta-sin-imagen">
+        <div class="icono-alerta">⚠️</div>
+        
+        <h2 class="titulo-alerta">Correo Sin Imagen</h2>
+        
+        <p class="mensaje-alerta">
+            Este correo no contiene una imagen adjunta para analizar. 
+            Sin la imagen de la boleta no es posible procesar el pago.
+        </p>
+        
+        <p class="mensaje-alerta" style="font-size: 14px; color: #666;">
+            Este correo se eliminará automáticamente en 8 días.
+        </p>
+        
+        <a href="{% url 'administracion:boletas_sandbox' %}" class="btn-volver">
+            Volver a lista de correos
+        </a>
+    </div>
+</div>
+
+
+{% endblock %}

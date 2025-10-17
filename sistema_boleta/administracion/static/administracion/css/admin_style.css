@@ -1,8 +1,6 @@
 /* Container principal del inbox */
 .inbox-container {
-    margin-left: 275px;
-    margin-right: 15px;
-    margin-top: 80px;
+    margin-left: 220px;
     padding: 0.5rem;
     background: #f8f9fa;
     min-height: calc(100vh - 80px);
@@ -276,6 +274,14 @@
 
 .status-dot.pending {
     background: #ff9800;
+}
+
+.status-dot.error {
+    background-color: #d53220;
+}
+
+.status-dot.rejected {
+    background-color: #550800;
 }
 
 .status-text {

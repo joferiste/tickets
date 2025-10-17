@@ -1,11 +1,11 @@
 /* Layout principal sin scroll */
 .page-container {
     position: fixed;
-    top: 80px;
-    left: 275px;
+    top: 50px;
+    left: 230px;
     right: 15px;
     bottom: 0;
-    background: #f8f9fa;
+    
     overflow: hidden;
     animation: fadeIn 0.8s ease-in-out;
 }
@@ -606,6 +606,10 @@
     gap: 15px;
     justify-content: center;
     width: 100%;
+}
+
+.resultado-actions a {
+    text-decoration: none;
 }
 
 .btn-resultado {

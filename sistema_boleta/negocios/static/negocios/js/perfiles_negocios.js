@@ -32,7 +32,7 @@ function confirmarEnvio() {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            mostrarResultado('✅', 'Recibo Enviado', 'El recibo se envio correctamente.');
+            mostrarResultado('✅', 'Recibo Enviado', 'El recibo se envió correctamente.');
         } else {
             mostrarResultado('❌', 'Error', data.message || 'Error al enviar el recibo.');
             botonActual.innerHTML = textoOriginal;

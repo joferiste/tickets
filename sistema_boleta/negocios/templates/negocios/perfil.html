@@ -25,10 +25,10 @@
                     </div>
                 </div>
                 <div class="header-right">
-                    <div class="header-actions">
-                        <button class="btn-action btn-edit">
-                            Editar Perfil
-                        </button>
+                    <div class="header-actions"> 
+                        <a href="{% url 'reportes:historial_negocio' negocio.idNegocio %}" class="btn-action btn-edit" >
+                            Historial
+                        </a>
                     </div>
                 </div>
             </div>
@@ -224,22 +224,22 @@
                                 </td>
                                 <td>
                                     <a href="{{ recibo.archivo.url }}" target="_blank" class="btn-download">
-                                        ⬇ Descargar PDF
+                                        Descargar PDF
                                     </a>
                                 </td>
                                 <td>
                                     <div class="acciones-grupo">
                                         {% if recibo.enviado %}
                                             <button class="btn-accion btn-reenviar" onclick="reenviarRecibo('{{ recibo.idRecibo }}', this)">
-                                                📧 Reenviar
+                                                Reenviar
                                             </button>
                                         {% else %}
                                             <button class="btn-accion btn-enviar" onclick="enviarRecibo('{{ recibo.idRecibo }}', this)">
-                                                ✉ Enviar
+                                                Enviar
                                             </button>
                                         {% endif %}
                                         <button class="btn-accion btn-info" onclick="verDetalles({{ recibo.idRecibo }})">
-                                            ℹ Detalles
+                                            Detalles
                                         </button>
                                     </div>
                                 </td>

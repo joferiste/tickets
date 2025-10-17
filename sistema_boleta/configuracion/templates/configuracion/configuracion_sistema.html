@@ -12,7 +12,7 @@
 
 <div class="config-container">
  
-    <h2>⚙ Configuración del Sistema</h2>
+    <h2>⚙ Configuración del sistema</h2>
     <form method="POST" class="config-form">
         {% csrf_token %}
 
@@ -32,6 +32,16 @@
                 <option value="">-- Selecciona --</option>
                 {% for dias in dias_sin_recargo_opciones %}
                     <option value="{{ dias }}"{% if config and config.dias_sin_recargo == dias %}selected{% endif %} > {{ dias }} días </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Días de confirmación bancaria</label>
+            <select name="dias_confirmacion" required>
+                <option value="">-- Selecciona --</option>
+                {% for days in dias_confirmacion_bancaria_opciones %}
+                    <option value="{{ days }}"{% if config and config.dias_confirmacion_bancaria == days %}selected{% endif %} > {{ days }} días </option>
                 {% endfor %}
             </select>
         </div>
@@ -81,7 +91,7 @@
 
 <!--Boton fuera del contenedor-->
 <a href="{% url 'configuracion:mantenimientos' %}" class="maintenance-button-fixed">
-    🛠️ Mantenimiento de elementos del sistema
+    🛠️ Mantenimiento de configuración del sistema
 </a>
 
 {% endblock %}

@@ -16,4 +16,6 @@ def get_local(locales, posicion):
 
 @register.filter
 def get_ocupacion(ocupaciones, id_local):
+    if not ocupaciones or id_local is None:
+        return None
     return ocupaciones.get(id_local, None)

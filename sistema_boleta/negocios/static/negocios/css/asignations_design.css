@@ -5,11 +5,11 @@
 .asignaciones-container {
     background-color: white;
     border-radius: 6px;
-    max-width: 900px;
+    max-width: 1210px;
     margin: auto;
     padding: 25px;
-    margin-top: 115px;
-    margin-left: 450px;
+    margin-top: 40px;
+    margin-left: 275px;
     box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
     animation: fadeIn 0.8s ease-in-out;
 }

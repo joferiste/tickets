@@ -33,10 +33,16 @@ class BancoForm(forms.ModelForm):
         # Validar solo digitos y guiones
         if not re.fullmatch(r"[0-9\-]+", numero_cuenta):
             raise forms.ValidationError("El número de cuenta sólo debe contener dígitos y guiones.")
+        
+        # Contar digitos (sin guiones)
+        solo_digitos = numero_cuenta.replace("-", "")
+        if not solo_digitos.isdigit() or not (9 <= len(solo_digitos) <= 11):
+            raise forms.ValidationError("El numero de cuenta debe de tener entre 9 y 11 digitos")
 
-        # Validar que tenga exactamente dos guions
-        if numero_cuenta.count("-") != 2:
-            raise forms.ValidationError("El número de cuenta debe de contener dos guiones, (ej. 11-111111-11).")
+        # Validar que si hay guiones, tenga al menod dos 
+        cantidad_guiones = numero_cuenta.count("-")
+        if cantidad_guiones > 0 and cantidad_guiones < 2:
+            raise forms.ValidationError("Si usas guiones, el numero de cuenta debe contener al menos 2 (ej. 11-111111-11).")
         
         return numero_cuenta
     

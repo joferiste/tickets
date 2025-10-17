@@ -1,0 +1,32 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %} Email con errores {% endblock %}
+
+{% block page_title %} Correo electrónico con errores {% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static "administracion/css/rechazada.css" %}">
+
+<div class="sandbox-container">
+    <div class="alerta-sin-imagen">
+        <div class="icono-alerta">⚠️</div>
+        
+        <h2 class="titulo-alerta">Correo con imagen duplicada</h2>
+        
+        <p class="mensaje-alerta">
+            Este correo contiene una imagen adjunta que al momento de ser analizada,
+            se ha detectado que ya forma parte de la base de datos de imágenes. <br>
+            No es posible continuar con boletas duplicadas.
+        </p>
+        
+        <p class="mensaje-alerta" style="font-size: 14px; color: #484646ff;">
+            Este correo se eliminará automáticamente en 8 días.
+        </p>
+        
+        <a href="{% url 'administracion:boletas_sandbox' %}" class="btn-volver">
+            Volver a lista de correos
+        </a>
+    </div>
+</div>
+{% endblock %}

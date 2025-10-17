@@ -11,6 +11,8 @@ urlpatterns = [
     path('locales/', include('locales.urls')),# <- Ruta de locales
     path('administracion/', include('administracion.urls')),# <- Ruta de administracion
     path('configuracion/', include('configuracion.urls')), # Ruta de configuracion
+    path('historiales/', include('historiales.urls')), # Ruta de historiales
+    path('reportes/', include('reportes.urls')), # Ruta de reportes
 ]
 
 if settings.DEBUG:

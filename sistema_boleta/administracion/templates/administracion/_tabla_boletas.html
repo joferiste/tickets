@@ -3,7 +3,13 @@
 <tr class="inbox-row {% if not boleta.leido %}unread{% endif %} {% if boleta.estado_validacion == 'procesada' %}processed{% endif %}">
     <td class="col-status">
         <div class="status-indicator">
-            {% if not boleta.leido %}
+            {% if boleta.estado_validacion == "sin_imagen" %}
+                <span class="status-dot error"></span>
+                <span class="status-text">Sin Imagen</span>
+            {% elif boleta.estado_validacion == "rechazada" %}
+                <span class="status-dot rejected"></span>
+                <span class="status-text">Rechazada</span>
+            {% elif not boleta.leido %}
                 <span class="status-dot unread"></span>
                 <span class="status-text">Nuevo</span>
             {% elif boleta.estado_validacion == "procesada" %}

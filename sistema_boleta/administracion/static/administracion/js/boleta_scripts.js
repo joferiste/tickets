@@ -187,14 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-     // Configurar event listener para cerrar modal (si existe)
-    waitForElement('#resultadoModal', function(modal) {
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeResultadoModal();
-            }
-        });
-    });
+   
 }); 
 
 function showResultadoModal(tipo, mensaje, transaccionId) {
@@ -219,35 +212,62 @@ function showResultadoModal(tipo, mensaje, transaccionId) {
 
     if (!seccion || !mensajeElement) {
         console.error('No se encontró la sección o elemento de mensaje para:', tipoMapped);
-    } else {
-        seccion.classList.remove('hidden-1');
-        mensajeElement.textContent = mensaje;
-        console.log('Sección mostrada:', tipoMapped);
+        return
+    }
 
-        // Buscar el botón "Ver Transacción" DENTRO de la sección activa.
-        // Intentamos por id local, luego por clase y finalmente por data-attribute.
-        let verBtn = seccion.querySelector('#verTransaccionBtn') 
-                || seccion.querySelector('.btn-resultado.primary')
-                || seccion.querySelector('button[data-action="ver-transaccion"]');
+    seccion.classList.remove('hidden-1');
+    mensajeElement.textContent = mensaje;
+    console.log('Sección mostrada:', tipoMapped);
 
-        if (verBtn) {
-            // Reemplazar el botón por su clon para limpiar todos los event listeners previos
-            const nuevoBtn = verBtn.cloneNode(true);
-            verBtn.parentNode.replaceChild(nuevoBtn, verBtn);
-            verBtn = nuevoBtn;
+    // Buscar el botón "Ver Transacción" DENTRO de la sección activa.
+    // Intentamos por id local, luego por clase y finalmente por data-attribute.
+    let verBtn = seccion.querySelector('#verTransaccionBtn') 
+            || seccion.querySelector('.btn-resultado.primary')
+            || seccion.querySelector('button[data-action="ver-transaccion"]');
 
-            if (transaccionId) {
-                verBtn.style.display = ''; // asegurarnos visible
-                verBtn.addEventListener('click', function () {
-                    window.location.href = `/administracion/transaccion/${transaccionId}/`;
-                });
-            } else {
-                // si no hay id, ocultarlo
-                verBtn.style.display = 'none';
-            }
+    if (verBtn) {
+        // Reemplazar el botón por su clon para limpiar todos los event listeners previos
+        const nuevoBtn = verBtn.cloneNode(true);
+        verBtn.parentNode.replaceChild(nuevoBtn, verBtn);
+        verBtn = nuevoBtn;
+
+        if (transaccionId) {
+            verBtn.style.display = ''; // asegurarnos visible
+            verBtn.addEventListener('click', function () {
+                window.location.href = `/administracion/transaccion/${transaccionId}/`;
+            });
         } else {
-            console.warn('No se encontró botón "Ver Transacción" dentro de la sección activa.');
+            // si no hay id, ocultarlo
+            verBtn.style.display = 'none';
         }
+    } else {
+        console.warn('No se encontró botón "Ver Transacción" dentro de la sección activa.');
+    }
+    // 🔹 BOTÓN: Salir al Home
+    let salirBtn = seccion.querySelector('#salirHome')
+        || seccion.querySelector('.btn-resultado.secondary')
+        || seccion.querySelector('button[data-action="salir-home"]');
+
+    if (salirBtn) {
+        const nuevoSalirBtn = salirBtn.cloneNode(true);
+        salirBtn.parentNode.replaceChild(nuevoSalirBtn, salirBtn);
+        salirBtn = nuevoSalirBtn;
+
+        salirBtn.addEventListener('click', function () {
+            // Cerrar animación (opcional)
+            const resultadoModal = document.getElementById('resultadoModal');
+            if (resultadoModal) {
+                resultadoModal.classList.add('hidden-1');
+                console.log('Modal cerrado, redirigiendo al Home...');
+                setTimeout(() => {
+                    window.location.href = "/";
+                }, 200); // 0.2s para dejar animar el cierre
+            } else {
+                window.location.href = "/";
+            }
+        });
+    } else {
+        console.warn('No se encontró botón "Cerrar / Salir".');
     }
 
     // Mostrar el modal de resultado
@@ -257,14 +277,5 @@ function showResultadoModal(tipo, mensaje, transaccionId) {
         console.log('Modal resultado mostrado');
     } else {
         console.error('No se encontró el modal de resultado');
-    }
-}
-
-
-function closeResultadoModal() {
-    const resultadoModal = document.getElementById('resultadoModal');
-    if (resultadoModal) {
-        resultadoModal.classList.add('hidden-1');
-        console.log('Modal resultado cerrado');
     }
 }

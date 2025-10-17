@@ -1,0 +1,225 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}{{ local.nombre }}{% endblock %}
+{% block page_title %} Perfil del Local{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'locales/css/local_profile.css' %}">
+
+<div class="perfil-container">
+    <!-- Header del Local -->
+    <div class="local-header">
+        <div class="header-content">
+            <div class="local-info">
+                <h1>{{ local.nombre }}</h1>
+                <div class="local-meta">
+                    <span class="meta-item">
+                        <strong>Posición:</strong> #{{ local.posicionMapa|default:"Sin asignar" }}
+                    </span>
+                    <span class="meta-item">
+                        <strong>Nivel:</strong> {{ local.nivel.nombre }}
+                    </span>
+                    <span class="meta-item">
+                        <strong>Ubicación:</strong> {{ local.nivel.ubicacion }}
+                    </span>
+                </div>
+                <span class="badge-estado {{ local.estado.nombre|lower }}">
+                    {{ local.estado.nombre }} 
+                </span>
+            </div>    
+            <div class="header-right">
+                    <div class="header-actions"> 
+                        <a href="{% url 'reportes:historial_local' local.idLocal %}" class="btn-action-right btn-edit" >
+                            Historial
+                        </a>
+                    </div>
+                </div>
+        </div>
+    </div>
+
+    <!-- Cards de Información Principal -->
+    <div class="info-grid">
+        <!-- Card de Costo -->
+        <div class="info-card primary">
+            <div class="card-icon">💰</div>
+            <div class="card-content">
+                <h3>Coste Mensual</h3>
+                <p class="card-value" data-valor="{{ local.costo }}">Q{{ local.costo }}</p>
+                <span class="card-label">Por mes</span>
+            </div>
+        </div>
+
+        <!-- Card de Ocupación -->
+        <div class="info-card {% if ocupacion_actual %}ocupado{% else %}disponible{% endif %}">
+            <div class="card-icon">
+                {% if ocupacion_actual %}🏢{% else %}🔓{% endif %}
+            </div>
+            <div class="card-content">
+                <h3>Estado de ocupación</h3>
+                {% if ocupacion_actual %}
+                    <p class="card-value">Ocupado</p>
+                    <span class="card-label">Desde {{ ocupacion_actual.fecha_inicio|date:"d/m/Y" }}</span>
+                {% else %}
+                    <p class="card-value">Disponible</p>
+                    <span class="card-label">Sin ocupación actual</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Card de Tiempo -->
+        <div class="info-card">
+            <div class="card-icon">📅</div>
+            <div class="card-content">
+                <h3>Creado</h3>
+                <p class="card-value">{{ local.fechaCreacion|date:"d/m/Y" }}</p>
+                <span class="card-label">{{ local.fechaCreacion|timesince }} atrás</span>
+            </div>
+        </div>
+
+        <div class="info-card success">
+            <div class="card-icon">📊</div>
+            <div class="card-content">
+                <h3>Ingresos Totales</h3>
+                <p class="card-value" data-valor="{{ ingresos_totales }}">Q. {{ ingresos_totales }}</p>
+                <span class="card-label">{{ total_transacciones|default:0 }} transacciones</span>
+            </div>
+        </div>        
+    </div>
+    <!-- Ocupación Actual (SOLO SI EXISTE) -->
+    {% if ocupacion_actual %}
+    <div class="seccion ocupacion-seccion">
+        <div class="seccion-header">
+            <h2>Negocio Actual</h2>
+        </div>
+        <div class="ocupacion-card">
+            <div class="ocupacion-info">
+                <div class="negocio-principal">
+                    <h3>{{ ocupacion_actual.negocio.nombre }}</h3>
+                    <span class="badge-categoria">{{ ocupacion_actual.negocio.categoria.nombre }}</span>
+                </div>
+                <div class="ocupacion-detalles">
+                    <div class="detalle-item">
+                        <span class="detalle-label">Fecha de inicio:</span>
+                        <span class="detalle-valor">{{ ocupacion_actual.fecha_inicio|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="detalle-item">
+                        <span class="detalle-label">Tiempo ocupado:</span>
+                        <span class="detalle-valor">{{ ocupacion_actual.fecha_inicio|timesince }}</span>
+                    </div>
+                    <div class="detalle-item">
+                        <span class="detalle-label">Contacto:</span>
+                        <span class="detalle-valor">{{ ocupacion_actual.negocio.email }}</span>
+                    </div>
+                    <div class="detalle-item">
+                        <span class="detalle-label">Teléfono:</span>
+                        <span class="detalle-valor">{{ ocupacion_actual.negocio.telefono1 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Historial de Ocupaciones -->
+    {% if ocupaciones_pasadas %}
+    <div class="seccion ocupaciones-pasadas-seccion">
+        <div class="seccion-header">
+            <h2>Historial de Ocupaciones</h2>
+        </div>
+        
+        <div class="tabla-container">
+            <table class="tabla-ocupaciones">
+                <thead>
+                    <tr>
+                        <th>Negocio</th>
+                        <th>Fecha Inicio</th>
+                        <th>Fecha Fin</th>
+                        <th>Duración</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ocupacion in ocupaciones_pasadas %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'negocios:perfil_negocio' ocupacion.negocio.idNegocio %}" class="link-negocio">
+                                {{ ocupacion.negocio.nombre }}
+                            </a>
+                        </td>
+                        <td>{{ ocupacion.fecha_inicio|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if ocupacion.fecha_fin %}
+                                {{ ocupacion.fecha_fin|date:"d/m/Y" }}
+                            {% else %}
+                                <span class="badge-actual">Actual</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if ocupacion.fecha_fin %}
+                                {{ ocupacion.fecha_inicio|timesince:ocupacion.fecha_fin }}
+                            {% else %}
+                                {{ ocupacion.fecha_inicio|timesince }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if ocupacion.fecha_fin %}
+                                <span class="badge-finalizado">Finalizado</span>
+                            {% else %}
+                                <span class="badge-activo">Activo</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Últimos Movimientos -->
+    <div class="seccion movimientos-seccion">
+        <div class="seccion-header">
+            <h2>Últimos Movimientos</h2>         
+        </div>
+        
+        {% if ultimos_movimientos %}
+        <div class="movimientos-lista">
+            {% for registro in ultimos_movimientos %}
+            <div class="movimiento-item {{ registro.accion|lower }}">
+                <div class="movimiento-icon">
+                    {% if registro.accion == 'CREACION' %}➕
+                    {% elif registro.accion == 'CAMBIO' %}🔄
+                    {% elif registro.accion == 'ACTUALIZACION' %}✏️
+                    {% else %}⚙️{% endif %}
+                </div>
+                <div class="movimiento-content">
+                    <div class="movimiento-header">
+                        <strong>{{ registro.accion }}</strong>
+                        <span class="movimiento-fecha">{{ registro.fechaModificacion|timesince }} atrás</span>
+                    </div>
+                    <p class="movimiento-descripcion">{{ registro.descripcion|truncatewords:20 }}</p>
+                    {% if registro.estadoNuevo %}
+                    <span class="badge-mini">{{ registro.estadoNuevo }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <p>No hay movimientos registrados</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="actions-footer">
+        <a href="{% url 'home' %}" class="btn-secondary">
+            ← Volver al dashboard
+        </a>
+    </div>
+</div>
+<script src="{% static 'locales/js/local_profile.js' %}"></script>
+{% endblock %}

@@ -10,7 +10,7 @@ class EstadoRecibo(models.Model):
         return self.nombre
     
 
-class Recibo(models.Model):
+class Recibo(models.Model): 
     idRecibo = models.AutoField(primary_key=True)
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     correlativo = models.CharField(max_length=20, null=False, blank=False)

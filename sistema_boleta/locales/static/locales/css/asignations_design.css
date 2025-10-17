@@ -5,11 +5,11 @@
 .asignaciones-container {
     background-color: white;
     border-radius: 6px;
-    max-width: 900px;
+    max-width: 1210px;
     margin: auto;
-    padding: 25px;
-    margin-top: 115px;
-    margin-left: 450px;
+    padding: 20px;
+    margin-top: 35px;
+    margin-left: 275px;
     box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
     animation: fadeIn 0.8s ease-in-out;
 }
@@ -128,7 +128,7 @@
     justify-content: flex-end;
 }
 .btn-danger-reiniciar {
-    margin-top: 25px;
+    margin-top: 15px;
     padding: 10px 14px;
     font-size: 16px;
     color: white;
@@ -138,7 +138,7 @@
     text-decoration: none;
     border-radius: 6px;
     transition: background-color 0.3s ease;
-    min-width: 140px;
+    min-width: 100px;
     background-color: #a20413;
 }
 

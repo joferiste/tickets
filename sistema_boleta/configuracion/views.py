@@ -1,8 +1,8 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from .models import Configuracion, Banco
 from django.contrib import messages
 import json
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.core.exceptions import ValidationError
 from configuracion.forms import BancoForm
@@ -14,11 +14,13 @@ def configuracion_sistema(request):
 
     dias_sin_recargo_opciones = [5, 10, 15, 20]
     mora_porcentaje_opciones = [5, 10, 15, 20]
+    dias_confirmacion_opciones = [3, 5, 8]
 
 
     if request.method == "POST":
         mora = request.POST.get("mora_porcentaje")
         dias = request.POST.get("dias_sin_recargo")
+        dias_confirmacion = request.POST.get("dias_confirmacion")
         banco_id = request.POST.get("banco_principal")
 
         if not (mora and dias and banco_id):
@@ -29,6 +31,7 @@ def configuracion_sistema(request):
             if config:
                 config.mora_porcentaje = mora
                 config.dias_sin_recargo = dias
+                config.dias_confirmacion_bancaria = dias_confirmacion
                 config.banco_principal = banco
                 config.save()
                 messages.success(request, "Configuración actualizada con éxito")
@@ -36,6 +39,7 @@ def configuracion_sistema(request):
                 Configuracion.objects.create(
                     mora_porcentaje = mora,
                     dias_sin_recargo = dias,
+                    dias_confirmacion_bancaria = dias_confirmacion,
                     banco_principal = banco,
                     activo = True
                 )
@@ -47,10 +51,9 @@ def configuracion_sistema(request):
         "bancos": bancos,
         "dias_sin_recargo_opciones": dias_sin_recargo_opciones,
         "mora_porcentaje_opciones": mora_porcentaje_opciones,
+        "dias_confirmacion_bancaria_opciones": dias_confirmacion_opciones,
         "banco_form": banco_form
     })
-
-
 
 def crear_banco(request):
     if request.method == "POST" and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -89,5 +92,31 @@ def crear_banco(request):
 
 
 def mantenimientos(request):
-    bancos = Banco.objects.filter(pk=id).first()
-        
+    bancos = Banco.objects.all().order_by('id')
+
+    return render(request, 'configuracion/mantenimientos.html', {'bancos': bancos})
+
+
+def editar_banco(request, banco_id):
+    banco = get_object_or_404(Banco, id=banco_id)
+
+    if request.method == 'POST':
+        form = BancoForm(request.POST, instance=banco)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True})
+    else:
+        return JsonResponse({'errors': form.errors}, status=400)
+    return JsonResponse({'error': 'Metodo no permitido'}, status=405)
+
+
+def eliminar_banco(request, banco_id):
+    banco = get_object_or_404(Banco, id=banco_id)
+
+    if request.method == 'POST':
+        try:
+            banco.delete()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'error': 'Error al eliminar el banco'}, status=400)
+    return JsonResponse({'error': 'Metodo no permitido'}, status=405)

@@ -19,7 +19,8 @@ from recibos.models import Recibo
 import json
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-
+from historiales.models import HistorialNegocio
+from django.core.paginator import Paginator
 
 
 def CreacionNegocios(request):

@@ -39,7 +39,7 @@ def is_duplicate_message(message_id: str, current_id:None) -> bool:
     return qs.exists()
 
 
-def is_recent_duplicate(remitente: str, hash_value: str, minutes: int = 10) -> bool:
+def is_recent_duplicate(remitente: str, hash_value: str, minutes: int = 2) -> bool:
     time_limit = now() - timedelta(minutes=minutes)
     return BoletaSandbox.objects.filter(
         remitente=remitente,

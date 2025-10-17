@@ -3,11 +3,17 @@ from django.contrib import messages
 from django.http import JsonResponse
 from locales.forms import LocalForm, EstadoLocalForm, NivelForm, UbicacionForm, BusquedaLocalForm, AsignarPosicionMapaForm
 from locales.models import Nivel, EstadoLocal, Ubicacion, Local
+from transacciones.models import Transaccion
 import json
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
 from django.db.models.deletion import ProtectedError
-
+from historiales.models import HistorialLocal
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from decimal import Decimal
+from django.db.models import Sum
+from django.utils import timezone
 
 def crear_local(request):
     max_locales = 8
@@ -254,3 +260,70 @@ def desasignar_posicion(request, local_id):
     
     messages.success(request, f"La posición del local {local.nombre} ha sido desasignada.")
     return redirect('locales:orden_local')  # Ajusta el redirect según tu nombre de vista
+
+
+@login_required
+def perfil_local(request, local_id):
+    """Vista para mostrar el perfil completo de un local"""
+    local = get_object_or_404(Local, idLocal=local_id)
+    
+    # Ocupación actual
+    ocupacion_actual = local.ocupaciones.filter(fecha_fin__isnull=True).first()
+    
+    # Ocupaciones pasadas (todas, incluyendo la actual)
+    ocupaciones_pasadas = local.ocupaciones.all().order_by('-fecha_inicio')
+    
+    # Últimos movimientos del historial
+    ultimos_movimientos = HistorialLocal.objects.filter(
+        local=local
+    ).order_by('-fechaModificacion')[:5]
+    
+    # Calcular ingresos totales del local (si tiene ocupación)
+    ingresos_totales = Decimal('0.00')
+    total_transacciones = 0
+
+    # Recorre todas las ocupaciones de este local
+    for ocupacion in ocupaciones_pasadas:
+    # Obtener transacciones exitosas del negocio en ese periodo
+        transacciones = Transaccion.objects.filter(
+            negocio=ocupacion.negocio,
+            estado='exitosa'
+        )
+
+        # Filtrar por rango de fechas de ocupación usando periodo_pagado
+        # periodo_pagado tiene formato "YYYY-MM" (ej: "2025-10")
+        fecha_inicio = ocupacion.fecha_inicio
+        fecha_fin = ocupacion.fecha_fin or timezone.now().date()
+        
+        # Generar lista de periodos válidos (YYYY-MM)
+        periodos_validos = []
+        fecha_actual = fecha_inicio
+        while fecha_actual <= fecha_fin:
+            periodos_validos.append(fecha_actual.strftime('%Y-%m'))
+            # Avanzar al siguiente mes
+            if fecha_actual.month == 12:
+                fecha_actual = fecha_actual.replace(year=fecha_actual.year + 1, month=1)
+            else:
+                fecha_actual = fecha_actual.replace(month=fecha_actual.month + 1)
+        
+        # Filtrar transacciones por periodos válidos
+        transacciones_periodo = transacciones.filter(
+            periodo_pagado__in=periodos_validos
+        )
+        
+        # Opción 1: Usar costo fijo del local
+        meses_ocupados = transacciones_periodo.count()
+        ingresos_ocupacion = local.costo * meses_ocupados
+        
+        ingresos_totales += ingresos_ocupacion
+        total_transacciones += meses_ocupados
+
+    context = {
+        'local': local,
+        'ocupacion_actual': ocupacion_actual,
+        'ocupaciones_pasadas': ocupaciones_pasadas,
+        'ultimos_movimientos': ultimos_movimientos,
+        'ingresos_totales': f"{ingresos_totales:.2f}", 
+        'total_transacciones': total_transacciones,
+    }
+    return render(request, 'locales/profile.html', context)

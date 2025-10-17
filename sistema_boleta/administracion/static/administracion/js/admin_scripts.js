@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             mensajeDiv.textContent = data.mensaje;
             mensajeDiv.style.display = 'block';
-            mensajeDiv.classList.add('success');
+            mensajeDiv.classList.add('success');    
 
             //Cargar la nueva tabla
             fetch('/administracion/boleta-parcial/')

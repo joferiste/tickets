@@ -16,7 +16,7 @@ def periodo_legible(value):
     """
     try:
         fecha = datetime.strptime(value, "%Y-%m")
-        return f"{MESES_ES[fecha.month].capitalize()} {fecha.year}"
+        return f"{MESES_ES[fecha.month].capitalize()} de {fecha.year}"
     except Exception:
         return value
     

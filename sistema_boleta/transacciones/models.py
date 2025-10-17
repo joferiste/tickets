@@ -15,9 +15,9 @@ class Transaccion(models.Model):
         ('procesada', 'Procesada'),     # Validaciones técnicas pasadas
         ('exitosa', 'Exitosa'),         # Confirmado, saldo aplicado 
         ('rechazada', 'Rechazada'),      # Invalida (ej, boleta repetida)
-        ('fallida', 'Fallida'),         # Intentada pero no se acredito
+        ('fallida', 'Fallida'),         # Intentada pero no se acredito 
     ]
-    idTransaccion = models.AutoField(primary_key=True) 
+    idTransaccion = models.AutoField(primary_key=True)  
     nombre = models.CharField(max_length=120, editable=False, unique=True)
     fecha_ingreso_sistema = models.DateTimeField(null=True, blank=True)
     fechaTransaccion = models.DateTimeField(auto_now_add=True) 
@@ -43,7 +43,7 @@ class Transaccion(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.nombre
+        return self.nombre  
     
     class Meta:
         verbose_name = "Transaccion"

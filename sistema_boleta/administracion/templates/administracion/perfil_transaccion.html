@@ -152,7 +152,7 @@
                                 <div class="mora-value">{{ transaccion.mora_monto|formato_q }}</div>
                             </div>
                             <div class="mora-item full-width">
-                                <div class="mora-label">Confirmación estimada</div>
+                                <div class="mora-label">Plazo para la confirmación estimada</div>
                                 <div class="mora-value">{{ transaccion.fecha_limite_confirmacion|date:"d/m/Y" }}</div>
                             </div>
                         </div>
@@ -224,8 +224,7 @@
                     <div class="warning-icon">⚠️</div>
                     <div class="warning-text">Esta acción cambiará el estado de la transacción y no se puede deshacer.</div>
                 </div>
-            </div>
-            
+            </div>         
             <div class="modal-actions">
                 <button class="btn-modal btn-cancel" onclick="cerrarModal()">Cancelar</button>
                 <button class="btn-modal btn-reject" onclick="validarTransaccion(false)">Rechazar</button>

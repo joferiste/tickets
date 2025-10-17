@@ -21,7 +21,7 @@ from decimal import Decimal, InvalidOperation
 from boletas.utils.mora import evaluar_pago, procesar_pago_faltante, detectar_pago_complementario, buscar_excedentes_disponibles
 from boletas.utils.mensajes_estados import generar_mensaje
 from email.utils import parsedate_to_datetime
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from django.views.decorators.cache import cache_control
 from configuracion.models import Configuracion
 from dateutil.relativedelta import relativedelta
@@ -61,16 +61,30 @@ def revisar_correos(request):
 def boleta_detalle(request, boleta_id):
     boleta = get_object_or_404(BoletaSandbox, id=boleta_id)
 
-    boleta_sandbox = BoletaSandbox.objects.filter(id=boleta_id).first()
+    # CASO ESPECIAL: Si no tiene imagen, redirigir a pagina especial
+    if not boleta.imagen:
+        # Calcular fecha de eliminacion si no existe
+        if not boleta.fecha_eliminacion:
+            boleta.fecha_eliminacion = boleta.fecha_recepcion + timedelta(days=8)
+            boleta.save(update_fields=['fecha_eliminacion'])
 
-    negocio_id = boleta_sandbox.metadata.get("negocio_id")
+        return render(request, 'administracion/sin_imagen.html', {'sandbox': boleta})
+
+    if boleta.estado_validacion == 'rechazada':
+        if not boleta.fecha_eliminacion:
+            boleta.fecha_eliminacion = boleta.fecha_recepcion + timedelta(days=8)
+            boleta.save(update_fields=['fecha_eliminacion'])
+
+        return render(request, 'administracion/rechazada.html', {'sandbox': boleta})
+
+    negocio_id = boleta.metadata.get("negocio_id")
     negocio = Negocio.objects.filter(idNegocio=negocio_id).first()
     print("[DEBUG] Negocio:", negocio)
 
     ocupacion = OcupacionLocal.objects.filter(negocio=negocio, fecha_fin__isnull=True).first()
     print("[DEBUG] Ocupacion encontrada:", ocupacion)
 
-    nombre_local = ocupacion.local.nombre
+    nombre_local = ocupacion.local.nombre if ocupacion else "Sin local asignado."
 
     # Marcar como leído si no lo está
     if not boleta.leido:
@@ -90,13 +104,14 @@ def boletas_sandbox_parcial(request):
 def eliminar_sandbox(request, boleta_id):
     boleta = get_object_or_404(BoletaSandbox, id=boleta_id)
 
-    if boleta.estado_validacion == 'rechazada':
+    # Permitir eliminar si esta rechazada o si no tiene imagen
+    if boleta.estado_validacion == 'rechazada' or not boleta.imagen:
         boleta.delete()
         messages.success(request, "Boleta eliminada exitosamente")
         # Redirigir a una vista general 
         return redirect('administracion:boletas_sandbox')
     else:
-        messages.error(request, "Sólo se pueden eliminar boletas rechazadas")
+        messages.error(request, "Sólo se pueden eliminar boletas rechazadas o sin imagen")
     return redirect('administracion:boleta_detalle', boleta_id=boleta.id)  # O adonde quieras redirigir
 
 def formatear_periodo(periodo_str):
@@ -412,6 +427,7 @@ def revisar_boletas(request, sandbox_id):
     tipos_pago = TipoPago.objects.all()
     bancos = Banco.objects.all()
     
+    
     context = {
         'boleta': sandbox,
         'negocio': negocio,
@@ -455,6 +471,7 @@ def procesar_boleta(request, boleta_id):
         monto = (request.POST.get('monto') or '').strip()
         numero_boleta = (request.POST.get('numeroBoleta') or '').strip()
         banco_id = int(request.POST.get('banco'))
+        banco = Banco.objects.get(id=banco_id)
         fecha_str = request.POST.get('fechaDeposito') # Viene del form
         tipo_pago_id = request.POST.get('tipoPago') # Viene del modal final
 
@@ -597,18 +614,19 @@ def procesar_boleta(request, boleta_id):
                 ruta_relativa = os.path.join('boletas_procesadas', nombre_archivo)
 
             # Crear nombre para boleta complementaria
-            fecha_formateada = timezone.now().strftime('%Y-%m-%d %H:%M')
+            fecha_formateada = timezone.now().strftime('%Y%m%d-%H%M%S')
             metadata = sandbox.metadata or {}
             nombre_negocio = metadata.get('negocio')
+            negocio_slug = slugify_filename(nombre_negocio)
 
             if nombre_negocio:
-                nombre_boleta = f"{nombre_negocio} - COMPLEMENTARIA - {fecha_formateada}"
+                nombre_boleta_comp = f"BOLETA-COMPLEMENTARIA-{boleta_id}-{negocio_slug}-{fecha_formateada}-{numero_boleta}-{banco.nombre}"
             else:
-                nombre_boleta = f"{sandbox.email} - COMPLEMENTARIA - {fecha_formateada}"
-
+                nombre_boleta_comp = f"BOLETA-COMPLEMENTARIA-{boleta_id}-{sandbox.email}-{fecha_formateada}-{numero_boleta}-{banco.nombre}"
+ 
             # Crear boleta complementaria (SIN crear transacción nueva)
             nueva_boleta = Boleta.objects.create(
-                nombre=nombre_boleta,
+                nombre=nombre_boleta_comp,
                 email=sandbox.remitente,
                 asunto=sandbox.asunto,
                 metadata=sandbox.metadata,
@@ -630,8 +648,7 @@ def procesar_boleta(request, boleta_id):
 
             # Regenerar el mensaje después del procesamiento complementario 
             # Recargar la transaccion actualizada
-            transaccion_con_faltante.refresh_from_db()
-
+            """
             # Preparar resultado_pago para generar_mensaje
             resultado_pago_actualizado = {
                 "estado": transaccion_con_faltante.estado,
@@ -650,10 +667,13 @@ def procesar_boleta(request, boleta_id):
                 boleta_nombre=boleta_original.nombre, # Usar nombre de boleta original
                 complemento=True # Marcar como complemento para el mensaje correcto
             )
+            """
+            transaccion_con_faltante.refresh_from_db()
+
 
             # Actualizar el mensaje en la transaccion
-            transaccion_con_faltante.mensaje_final = mensaje_actualizado
-            transaccion_con_faltante.save(update_fields=['mensaje_final'])
+            #transaccion_con_faltante.mensaje_final = mensaje_actualizado
+            #transaccion_con_faltante.save(update_fields=['mensaje_final'])
 
             # Asignar la transaccion para uso posterior
             transaccion = transaccion_con_faltante
@@ -681,14 +701,15 @@ def procesar_boleta(request, boleta_id):
                 ruta_relativa = os.path.join('boletas_procesadas', nombre_archivo)
 
             # Crear nombre para boleta nueva
-            fecha_formateada = timezone.now().strftime('%Y-%m-%d %H:%M')
+            fecha_formateada = timezone.now().strftime("%Y%m%d-%H%M%S")
             metadata = sandbox.metadata or {}           
             nombre_negocio = metadata.get("negocio")
+            negocio_slug = slugify_filename(nombre_negocio)
 
             if nombre_negocio:
-                nombre_boleta = f"{nombre_negocio} - {fecha_formateada}"
+                nombre_boleta = f"BOLETA-{boleta_id}-{negocio_slug}-{fecha_formateada}-{numero_boleta}-{banco.nombre}"
             else:
-                nombre_boleta = f"{sandbox.email} - {fecha_formateada}"
+                nombre_boleta = f"BOLETA-{boleta_id}-{sandbox.email}-{fecha_formateada}-{numero_boleta}-{banco.nombre}"
 
             # Crear nueva boleta
             nueva_boleta = Boleta.objects.create(
@@ -709,6 +730,10 @@ def procesar_boleta(request, boleta_id):
                 fechaDeposito=fecha_deposito_obj
             )
             print(f"Guardando transacción con excedente: {resultado_pago['excedente']}")
+
+            # Creacion del mensaje final
+            mensaje_final = generar_mensaje(resultado_pago, boleta_nombre=nueva_boleta.nombre, complemento=nueva_boleta.es_complemetaria)
+
             # Crear transacción nueva
             transaccion = Transaccion.objects.create(
                 boleta=nueva_boleta,
@@ -722,15 +747,10 @@ def procesar_boleta(request, boleta_id):
                 excedente=resultado_pago["excedente"],
                 dias_retraso=resultado_pago['dias_mora'],
                 fecha_limite_confirmacion=resultado_pago['fecha_lapso_tiempo'],
-                fecha_ingreso_sistema=resultado_pago['fecha_original_conv']
+                fecha_ingreso_sistema=resultado_pago['fecha_original_conv'],
+                mensaje_final=mensaje_final
             )
             
-
-            # Guardar mensaje humanizado en la transaccion para usarlo después
-            transaccion.mensaje_final = generar_mensaje(resultado_pago, boleta_nombre=nueva_boleta.nombre, complemento=nueva_boleta.es_complemetaria)
-            transaccion.save(update_fields=['mensaje_final'])
-
-
         # Marcar el sandbox como procesado
         sandbox.procesado = True
         sandbox.estado_validacion = 'procesada'
@@ -759,7 +779,7 @@ def get_tipo_modal_resultado(estado, faltante):
     # Determina que tipo de modal mostrar segun el resultado
     if estado == 'exitosa' and faltante == 0:
         return 'exitoso'
-    elif estado in ['espera_complemento', 'espera_confirmacion', 'espera_acreditacion']:
+    elif estado in ['espera_complemento', 'espera_confirmacion', 'espera_acreditacion', 'espera_confirmacion_faltante']:
         return 'pendiente'
     else:
         return 'error'
@@ -976,7 +996,7 @@ def slugify_filename(nombre: str) -> str:
     # Reemplazar caracteres no alfanumericos por _
     nombre = re.sub(r'\W+', '_', nombre)
     #Limitar longitud
-    return nombre[:25]
+    return nombre[:30]
 
 
 def generar_recibo(request, transaccion_id):

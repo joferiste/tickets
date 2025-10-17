@@ -1,0 +1,262 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load visual_help %}
+
+{% block title %}Análisis de Pagos{% endblock %}
+
+{% block page_title %} Análisis de pagos, gráficas y datos {% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{% static 'historiales/css/data_analytics.css' %}">
+<div class="principal-container">
+    <div class="dashboard-header">
+        <h1>📊 Análisis de Comportamiento de Pagos</h1>
+        <p>Métricas detalladas y timeline de transacciones por negocio</p>
+    </div>
+
+    <!-- Buscador de negocios -->
+    <div class="search-section">
+        <h3 style="margin-bottom: 1rem; color: #333;">Seleccionar Negocio</h3>
+        <form method="get" class="search-box">
+            <select name="negocio_id" onchange="if(this.value) this.form.submit()" required>
+                <option value="">-- Buscar negocio --</option>
+                {% for negocio in negocios_disponibles %}
+                    <option value="{{ negocio.idNegocio }}" 
+                            {% if negocio_seleccionado and negocio.idNegocio == negocio_seleccionado.idNegocio %}selected{% endif %}>
+                        {{ negocio.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+            <span class="search-icon">🔍</span>
+        </form>
+    </div>
+
+    {% if negocio_seleccionado and perfil %}
+        <!-- Cards de métricas principales -->
+        <div class="section-metrics">
+            <div class="metrics-grid">
+                <div class="metric-card primary">
+                    <div class="metric-icon">💰</div>
+                    <div class="metric-label">Total Pagado</div>
+                    <div class="metric-value">{{ perfil.total_monto_pagado|currency }}</div>
+                    <div class="metric-subtitle">{{ perfil.total_pagos_realizados }} pagos realizados</div>
+                </div>
+
+                <div class="metric-card success">
+                    <div class="metric-icon">✅</div>
+                    <div class="metric-label">Puntualidad</div>
+                    <div class="metric-value">{{ perfil.porcentaje_puntualidad|floatformat }}%</div>
+                    <div class="metric-subtitle">Racha: {{ perfil.racha_actual_sin_mora }} pagos sin mora</div>
+                </div>
+
+                <div class="metric-card warning">
+                    <div class="metric-icon">📅</div>
+                    <div class="metric-label">Día Promedio de Pago</div>
+                    <div class="metric-value">{{ perfil.dia_promedio_pago|default:"N/A" }}</div>
+                    <div class="metric-subtitle">Del mes</div>
+                </div>
+
+                <div class="metric-card info">
+                    <div class="metric-icon">💳</div>
+                    <div class="metric-label">Método Preferido</div>
+                    <div class="metric-value" style="font-size: 28px;">{{ perfil.metodo_preferido|default:"N/A" }}</div>
+                    <div class="metric-subtitle">Promedio: {{ perfil.promedio_monto_pago|currency }}</div>
+                </div>
+            </div>
+
+            <!-- Métricas secundarias -->
+            <div class="metrics-grid-secondary">
+                <div class="metric-card" style="border-color: #e53e3e;">
+                    <div class="metric-icon">⚠️</div>
+                    <div class="metric-label">Pagos con Mora</div>
+                    <div class="metric-value">{{ perfil.total_veces_con_mora }}</div>
+                    <div class="metric-subtitle">{{ estadisticas.pagos_sin_mora }} sin mora</div>
+                </div>
+
+                <div class="metric-card" style="border-color: #38b2ac;">
+                    <div class="metric-icon">💵 </div>
+                    <div class="metric-label">Efectivo</div>
+                    <div class="metric-value">{{ estadisticas.metodos.efectivo }}</div>
+                    <div class="metric-subtitle">pagos</div>
+                </div>
+
+                <div class="metric-card" style="border-color: #dadd27ff;">
+                    <div class="metric-icon">🏦</div>
+                    <div class="metric-label">Cheque</div>
+                    <div class="metric-value">{{ estadisticas.detallados.cheque }}</div>
+                    <div class="metric-subtitle">pagos</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Evolución de Pagos (Últimos 12 meses)</h3> 
+                <div class="chart-container" style="height: 350px;">
+                    <div id="chartLinea" style="height: 100%;"></div>  
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3>Distribución por Método de Pago</h3>
+                <div class="chart-container" style="height: 350px;">
+                    <div id="chartPie" style="height: 100%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline de pagos -->
+        {% for ano, pagos in timeline.items %}
+        <div class="timeline-section">
+            <div class="timeline-header">
+                <h2>Historial de Pagos</h2>
+                <span class="year-badge">{{ ano }}</span>
+            </div>
+
+            <div class="timeline">
+                {% for pago in pagos %}
+                <div class="timeline-item">
+                    <div class="timeline-marker {% if pago.tuvo_mora %}mora{% endif %}"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">{{ pago.fecha|date:"l\, d \d\e F \d\e Y \a \l\a\s H:i"|capfirst }}</div>
+                        <div class="timeline-periodo">Pago correspondiente al período de: {{ pago.periodo|periodo_legible }}</div>
+                        <div class="timeline-details">
+                            <span class="timeline-badge badge-monto">{{ pago.monto|currency }}</span>
+                            <span class="timeline-badge badge-metodo">{{ pago.metodo|capfirst }}</span>
+                            {% if pago.tuvo_mora %}
+                                <span class="timeline-badge badge-mora">Mora: {{ pago.monto_mora|currency }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+    {% else %}
+        <!-- Estado vacío -->
+        <div class="empty-state">
+            <div class="empty-state-icon">📊</div>
+            <h3>Selecciona un negocio para ver sus métricas</h3>
+            <p>Usa el buscador arriba para elegir un negocio y visualizar su historial de pagos</p>
+        </div>
+    {% endif %}
+</div>
+
+
+
+<!-- PRIMERO cargar la librería -->
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<!-- DESPUÉS código -->
+<script>
+console.log("=== INICIANDO GRÁFICOS ===");
+console.log("echarts existe:", typeof echarts !== 'undefined');
+
+{% if estadisticas %}
+    console.log("estadisticas existe: SÍ");
+    console.log("Labels:", {{ estadisticas.meses_labels|safe }});
+    console.log("Montos:", {{ estadisticas.meses_montos|safe }});
+    
+    const estadisticas = {
+        meses_labels: {{ estadisticas.meses_labels|safe }},
+        meses_montos: {{ estadisticas.meses_montos|safe }},
+        metodos: {
+            efectivo: {{ estadisticas.metodos.efectivo }},
+            no_efectivo: {{ estadisticas.metodos.no_efectivo }}
+        }
+    };
+    
+    // Gráfico de línea
+    const chartLineaEl = document.getElementById('chartLinea');
+    console.log("Elemento chartLinea:", chartLineaEl);
+    
+    if (chartLineaEl) {
+        const chartLinea = echarts.init(chartLineaEl);
+        chartLinea.setOption({
+            xAxis: {
+                type: 'category',
+                data: estadisticas.meses_labels
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [{
+                data: estadisticas.meses_montos,
+                type: 'line',
+                smooth: true,
+                areaStyle: {
+                    color: 'rgba(102, 126, 234, 0.3)'
+                },
+                lineStyle: {
+                    color: '#ea9466ff',
+                    width: 3
+                }
+            }],
+            tooltip: {
+                trigger: 'axis'
+            }
+        });
+        console.log("Gráfico de línea creado");
+    } else {
+        console.error("No se encontró el elemento chartLinea");
+    }
+    
+    // Gráfico de dona
+    const chartPieEl = document.getElementById('chartPie');
+    console.log("Elemento chartPie:", chartPieEl);
+    
+    if (chartPieEl) {
+        const chartPie = echarts.init(chartPieEl);
+        chartPie.setOption({
+            tooltip: {
+                trigger: 'item',
+                formatter: '{b}: {c} ({d}%)'
+            },
+            legend: {
+                orient: 'horizontal',
+                bottom: '0%',
+                left: 'center'
+            },
+            series: [{
+                type: 'pie',
+                radius: ['40%', '70%'],
+                center: ['50%', '40%'],
+                avoidLabelOverlap: true,
+                itemStyle: {
+                    borderRadius: 10,
+                    borderColor: '#fff',
+                    borderWidth: 2
+                },
+                label: {
+                    show: true,
+                    position: 'outside',
+                    formatter: '{b}\n{d}%'
+                },
+                data: [
+                    {
+                        value: estadisticas.metodos.efectivo, 
+                        name: 'Efectivo',
+                        itemStyle: {color: '#48bb78'}
+                    },
+                    {
+                        value: estadisticas.metodos.no_efectivo, 
+                        name: 'No Efectivo',
+                        itemStyle: {color: '#667eea'}
+                    }
+                ]
+            }]
+        });
+        console.log("Gráfico de dona creado");
+    } else {
+        console.error("No se encontró el elemento chartPie");
+    }
+{% else %}
+    console.log("NO HAY ESTADÍSTICAS");
+{% endif %}
+
+console.log("=== FIN GRÁFICOS ===");
+</script>
+{% endblock %}

@@ -9,57 +9,79 @@
 
 <!-- Contenido Principal -->
 <div class="main-content">
-
-    <div class="locales-mapa">
-        {% for i in "12345678" %}
-            {% with local=locales|get_local:i %}
-                {% with ocupacion=ocupaciones|get_ocupacion:local.idLocal %}
-                    <div class="local local-{{ i }} {% if local %}{{ local.estado.nombre|lower }}{% else %}Disponible{% endif %}"
-                        {% if ocupacion %} data-negocio="{{ ocupacion.negocio.nombre }}" {% endif %}>
-
-                    <span class="badge-position">{{ i }}</span>
-
+    <div class="content-wrapper">
+        <div class="locales-mapa">
+            {% for i in "12345678" %}
+                {% with local=locales|get_local:i %}
                     {% if local %}
-                        {{ local.nombre }}
-                    {% else %}
-                        Local {{ i }}
-                    {% endif %}
+                        {# Saca el <a> fuera del with de ocupacion #}
+                        <a href="{% url 'locales:perfil_local' local.idLocal %}" 
+                        class="local local-{{ i }} {{ local.estado.nombre|lower }}">
+                            
+                            <span class="badge-position">{{ i }}</span>
+                            {{ local.nombre }}
+                            
+                            <div class="tooltip">
+                                <h3>{{ local.nombre|default:"Local sin nombre" }}</h3>
+                                
+                                {% with ocupacion=ocupaciones|get_ocupacion:local.idLocal %}
+                                    {% if ocupacion %}
+                                        <strong>Negocio:</strong> {{ ocupacion.negocio.nombre }}<br>
+                                        <strong>Inicio:</strong> {{ ocupacion.fecha_inicio|date:"d/m/Y" }}<br>
 
-                    <div class="tooltip">
-                        {% if local %}
-                            <strong>
-                                <h3>{{ local.nombre|default:"Local sin nombre" }}</h3> 
-                            </strong> 
-                                {% if ocupacion %}
-                                    <br><strong>Negocio:</strong> {{ ocupacion.negocio.nombre }}<br>
-                                    <strong>Inicio:</strong> {{ ocupacion.fecha_inicio|date:"d/m/Y" }}<br>
-                                {% endif %}
-                            <strong>Estado:</strong> {{ local.estado }}<br>
-                        {% else %}
-                            <strong>Local {{ i }} (No asignado)</strong> 
-                        {% endif %}
-                    </div>
-                    </div>
+                                    {% endif %}
+                                {% endwith %}
+                                
+                                <strong>Estado: </strong>{{ local.estado }}
+                            </div>
+                        </a>
+                    {% else %}
+                        {# Local no existe en la BD #}
+                        <div class="local local-{{ i }} disponible">
+                            <span class="badge-position">{{ i }}</span>
+                            Local {{ i }}
+                            
+                            <div class="tooltip">
+                                <h3>Local {{ i }}</h3>
+                                <strong>Estado:</strong> No asignado
+                            </div>
+                        </div>
+                    {% endif %}
                 {% endwith %}
-            {% endwith %}
-        {% endfor %}
-    </div>
-    <!-- Panel derecho: Negocios creados -->
-    <div class="right-panel">
-        <h3> Negocios </h3>
-        <div class="business-item">
-            {% for negocio in negocios %}
-                <div class="business-name" data-negocio="{{ negocio.nombre }}">
-                    <a href="{% url 'negocios:perfil_negocio' negocio.idNegocio %}">
-                        <div class="only-name"> {{ negocio.nombre }} </div>
-                        <div class="responsably-name"> {{ negocio.usuario.nombre }} </div>
-                    </a>
-                </div>
-            {% empty %}
-                <p> No hay negocios registrados.</p>
             {% endfor %}
-        </div>        
+        </div>
+        
+
+        <!-- Panel derecho: Negocios -->
+        <div class="right-panel">
+            <h3>Negocios Activos</h3>
+            <div class="business-item">
+                {% for negocio in negocios %}
+                    <div class="business-name" data-negocio="{{ negocio.nombre }}">
+                        <a href="{% url 'negocios:perfil_negocio' negocio.idNegocio %}">
+                            <div class="only-name">{{ negocio.nombre }}</div>
+                            <div class="responsably-name">{{ negocio.usuario.nombre }}</div>
+                        </a>
+                    </div>
+                {% empty %}
+                    <p style="text-align: center; color: #999; padding: 2rem 0;">
+                        No hay negocios registrados
+                    </p>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </div>
 
+<!-- Leyenda de estados -->
+<div class="legend">
+    <div class="legend-item">
+        <div class="legend-color legend-disponible"></div>
+        <span>Disponible</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color legend-ocupado"></div>
+        <span>Ocupado</span>
+    </div>
+</div>
 {% endblock %}

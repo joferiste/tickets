@@ -1,0 +1,87 @@
+{% extends 'core/base.html' %}
+
+{% load static %}
+
+{% block title %} Mantenimiento {% endblock %}
+
+{% block page_title %} Mantenimiento {% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'configuracion/css/mantenimientos.css' %}">
+<script src="{% static 'configuracion/js/mantenimientos.js' %}"></script>
+<div class="container">
+    <h2> Mantenimiento de Bancos </h2>
+    <table class="tabla-mantenimiento">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Número de Cuenta</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for banco in bancos %}
+            <tr data-id="{{ banco.id }}" data-nombre="{{ banco.nombre }}" data-numero="{{ banco.numero_cuenta }}"> 
+                <td>{{ banco.id }}</td>
+                <td>{{ banco.nombre }}</td>
+                <td>{{ banco.numero_cuenta }}</td>
+                <td>
+                    <button class="btn btn-edit" onclick="abrirModalEditar(this)">Editar</button>
+                    <button class="btn btn-delete" onclick="abrirModalEliminar(this)">Eliminar</button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+               <td colspan="4" style="text-align: center; padding: 20px;">No hay bancos registrados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal de edicion -->
+ <div id="modal-editar" class="modal" aria-hidden="true">
+    <div class="modal-content">
+        <h3> Editar Banco </h3>
+        <form id="form-editar" method="POST">
+            {% csrf_token %}
+            <input type="hidden" id="banco-id" name="banco_id">
+            <div class="form-group">
+                <label for="nombre">Nombre </label>
+                <input type="text" id="nombre" name="nombre" placeholder="Ej. BAM" required>
+            </div>
+            <div class="form-group">
+                <label for="numero_cuenta">Número de cuenta:</label>
+                <input type="text" id="numero_cuenta" name="numero_cuenta" placeholder="11-111111-11" required>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn btn-save">Guardar</button>
+                <button type="button" class="btn btn-cancel" onclick="cerrarModal()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+ </div>
+
+ <!-- Modal de eliminación -->
+<div id="modal-eliminar" class="modal modal-eliminar" aria-hidden="true">
+    <div class="modal-content">
+        <div class="icono-advertencia">⚠️</div>
+        <h3>Confirmar Eliminación</h3>
+        <form id="form-eliminar" method="POST">
+            {% csrf_token %}
+            <input type="hidden" id="eliminar-banco-id">
+            <div class="mensaje-confirmacion">
+                ¿Estás seguro de que deseas eliminar este banco?<br><br>
+                <strong id="eliminar-banco-nombre"></strong>
+                <br><br>
+                Esta acción no se puede deshacer.
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn btn-confirmar">Eliminar</button>
+                <button type="button" class="btn btn-cancel" onclick="cerrarModalEliminar()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

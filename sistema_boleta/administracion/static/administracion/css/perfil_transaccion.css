@@ -1,7 +1,6 @@
 /* Layout principal */
 .main-content {
-    margin-left: 270px;
-    margin-top: 60px;
+    margin-left: 220px;
     padding: 1.5rem;
     background-color: #f8f9fa;
     min-height: calc(100vh - 60px);
@@ -63,9 +62,10 @@
 .status-exitosa { background: #d1f2eb; color: #0e6b47; }
 .status-pendiente { background: #fef9e7; color: #b7950b; }
 .status-espera_confirmacion { background: #d6eaf8; color: #1b4f72; }
+.status-espera_confirmacion_faltante { background: #95c9ee; color: #584e1b; }
 .status-espera_complemento { background: #fadbd8; color: #a93226;    }
 .status-espera_acreditacion { background: #e8f5e8; color: #2e7d2e; }
-.status-rechazada { background: #fadbd8; color: #a93226; }
+.status-rechazada { background: #fadbd8; color: #a93226; } 
 
 .header-right {
     text-align: right;
