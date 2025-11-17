@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
             hasError = true;
             firstErrorField = firstErrorField || 'edit_telefono2';
         }
-
+ 
         if (hasError) {
             event.preventDefault();
             document.getElementById(firstErrorField).focus()

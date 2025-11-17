@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         return errores;
     }
-    
+        
     function mostrarErrores(errores) {
         if (errores.length === 0) return;
         

@@ -4,7 +4,7 @@
     align-items: center;
     min-height: calc(100vh - 80px);
     padding-top: 1rem;
-}
+} 
 
 .form-wrapper{
     background-color: #fff;
@@ -531,4 +531,23 @@
 
 .tooltip-error.fade-out {
     opacity: 0;
+}
+
+.maintenance-button-fixed {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background-color: #007BFF;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    text-decoration: none;
+    transition: background-color 0.3s, transform 0.3s ease;
+    z-index: 9;
+}
+
+.maintenance-button-fixed:hover {
+    background-color: #0056b3;
+    transform: scale(1.02);
 }

@@ -20,8 +20,9 @@ import json
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from historiales.models import HistorialNegocio
-from django.core.paginator import Paginator
-
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from locales.utils import registrar_historial_negocio, detectar_cambios_negocios, registrar_asignacion_local, registrar_desasignacion_local
+import re
 
 def CreacionNegocios(request):
     if request.method == 'POST':
@@ -30,7 +31,15 @@ def CreacionNegocios(request):
         categoria_form = CategoriaForm()
 
         if form.is_valid():
-            form.save()
+            # Guardar negocio
+            nuevo_negocio = form.save()
+            registrar_historial_negocio(
+                negocio=nuevo_negocio, 
+                accion='CREACION',
+                tipo_cambio='creacion_negocio',
+                descripcion=f"Negocio: '{nuevo_negocio.nombre}' con Descripción: '{nuevo_negocio.descripcion}'",
+                estado_nuevo=f"Estado: {nuevo_negocio.estado}, Categoría: {nuevo_negocio.categoria}"
+            )
             messages.success(request, '✅ Negocio creado correctamente.')
             return redirect('negocios:create_negocio')
     else:
@@ -103,19 +112,37 @@ def crear_categoria(request):
 
 
 def visualizar_negocio(request):
+    # Obtener todos los negocios
+    negocios_lista = Negocio.objects.all().order_by('-fechaCreacion')
+
+    # Manejar búsqueda
     if request.method == "POST":
         form = BusquedaNegocioForm(request.POST)
+        if form.is_valid():
+            q = form.cleaned_data.get('q', '').strip()
+            if q:
+                negocios_lista = negocios_lista.filter(nombre__icontains=q)
     else:
         form = BusquedaNegocioForm()
 
-    negocio = Negocio.objects.all()
+    # Configuración paginación
+    paginator = Paginator(negocios_lista, 5)
+    page_number = request.GET.get('page', 1)
 
-    if form.is_valid():
-        q = form.cleaned_data.get('q')
-        if q:
-            negocios = negocios.filter(nombre__icontains=q)
+    try:
+        negocios = paginator.page(page_number)
+    except PageNotAnInteger:
+        negocios = paginator.page(1)
+    except EmptyPage:
+        negocios = paginator.page(paginator.num_pages)
 
-    return render(request, 'negocios/visualizar_negocios.html', {'form': form, 'negocios': negocio})
+    context = {
+        'form': form,
+        'negocios': negocios,
+        'total_negocios': paginator.count,
+    }
+
+    return render(request, 'negocios/visualizar_negocios.html', context)
 
 
 def editar_negocio(request, id):
@@ -135,16 +162,39 @@ def actualizar_negocio(request):
     negocio_id = request.POST.get('id')
 
     if not negocio_id:
-        return JsonResponse({"success": False, "error": "id del Negocio no proporcionado"})
+        return JsonResponse({
+            "success": False, 
+            "error": "id del Negocio no proporcionado",
+            "message": "Error: ID del negocio no propocionado",
+            "message_type": "error",
+            })
 
     negocio = get_object_or_404(Negocio, idNegocio = negocio_id)
+
+    negocio_anterior = Negocio.objects.get(idNegocio=negocio_id)
+
     form = NegocioForm(request.POST, instance=negocio)
 
     if form.is_valid():
-        form.save()
+        negocio_actualizado = form.save()
+
+        # Detectar y guardar cambios en el historial 
+        cambios = detectar_cambios_negocios(negocio_anterior, negocio_actualizado)
+
+        # Si no hubo cambios especificos, registrar actualizacion general
+        if not cambios:
+            registrar_historial_negocio(
+                negocio=negocio_actualizado,
+                accion='ACTUALIZACION',
+                tipo_cambio='actualizacion_general',
+                descripcion=f"Negocio '{negocio_actualizado.nombre}' actualizado sin cambios detectados."
+            )
+
             # Construccion del diccionario con los campos que necesitamos actualizar en el DOM
         return JsonResponse({
-            "success": True, 
+            "success": True,
+            "message": "✅ Negocio actualizado correctamente",
+            "message_type": "success", 
             "negocio": {
                 "id": negocio.idNegocio, 
                 "nombre": negocio.nombre, 
@@ -165,7 +215,12 @@ def actualizar_negocio(request):
                                     "form": form, 
                                     "negocio": negocio
                                     }, request=request)
-        return JsonResponse({"success": False, "html": html_form})
+        return JsonResponse({
+            "success": False, 
+            "html": html_form,
+            "message":"Error al procesar la actualización",
+            "message_type": "error"
+            })
 
 
 @require_POST
@@ -173,8 +228,21 @@ def delete_negocio(request):
     negocio_id = request.POST.get('id')
     negocio = get_object_or_404(Negocio, idNegocio=negocio_id)
 
+    # Guardar informacion antes de eliminar
+    nombre_negocio = negocio.nombre
+    info_local = f"Estado: {negocio.estado}, Categoria: {negocio.categoria}"
+
     try:
         negocio.delete()
+
+        # Se registra si se elimina correctamente
+        registrar_historial_negocio(
+            negocio=negocio,
+            accion='ELIMINACION',
+            tipo_cambio='eliminacion_negocio',
+            descripcion=f"Negocio '{nombre_negocio}' eliminado del sistema.",
+            estado_anterior=info_local
+        )
 
         return JsonResponse({
             "success":True,
@@ -194,9 +262,9 @@ def negocio_local(request):
     locales_ocupados_ids = asignaciones.values_list('local_id', flat=True)
 
     # 3. Excluir esos locales ocupados
-    locales_disponibles = Local.objects.exclude(idLocal__in=locales_ocupados_ids)
+    locales_disponibles = Local.objects.exclude(idLocal__in=locales_ocupados_ids) 
 
-    if request.method == 'POST':
+    if request.method == 'POST': 
         form = AsignarLocalForm(request.POST)
         form.fields['local'].queryset = locales_disponibles
 
@@ -220,6 +288,12 @@ def negocio_local(request):
                 local.estado = estado_ocupado
                 local.save()
 
+                registrar_asignacion_local(
+                    local=local,
+                    negocio=negocio,
+                    fecha_inicio=fecha_inicio
+                )
+
                 messages.success(request, f"Local {local.nombre} asignado a {negocio.nombre}.")
                 return redirect('negocios:negocio_local')
     else:
@@ -239,17 +313,29 @@ def negocio_local(request):
 def desasignar_local(request, ocupacion_id):
     ocupacion = get_object_or_404(OcupacionLocal, pk=ocupacion_id, fecha_fin__isnull=True)
 
+    # Guardar referencias antes de modificar
+    local = ocupacion.local
+    negocio = ocupacion.negocio
+    fecha_inicio = ocupacion.fecha_inicio
+    fecha_fin = timezone.now().date()
+
     # Finaliza la Ocupacion
-    ocupacion.fecha_fin = timezone.now().date()
+    ocupacion.fecha_fin = fecha_fin
     ocupacion.save()
 
     # Cambia el estado del local a 'Disponible'
     estado_disponible = get_object_or_404(EstadoLocal, nombre__iexact="Disponible")
-    local = ocupacion.local
     local.estado = estado_disponible
     local.save()
 
-    messages.info(request, f"Local {local.nombre} fue desasignado del negocio {ocupacion.negocio.nombre} y marcado como Disponible")
+    registrar_desasignacion_local(
+        local=local,
+        negocio=negocio,
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin
+    )
+
+    messages.info(request, f"Local {local.nombre} fue desasignado del negocio {ocupacion.negocio.nombre} y marcado como Disponible.")
     return redirect('negocios:negocio_local')
 
 
@@ -482,3 +568,99 @@ def recibo_detalles(request, recibo_id):
             'error': f'Error al cargar detalles del recibo: {str(e)}'
         }
     return render(request, 'negocios/error.html', context)
+
+
+def mantenimiento_negocios(request):
+    """ Vista principal del mantenimiento de negocios -edicion- """
+
+    if request.method == 'POST':
+        # Determinar si es peticion AJAX
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        tipo = request.POST.get('tipo')
+        item_id = request.POST.get('item_id')
+        nombre = request.POST.get('nombre', '').strip()
+
+        if not nombre:
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': 'El nombre es requerido'}, status=400)
+            messages.error(request, 'El nombre es requerido')
+            return redirect('negocios:mantenimiento_negocios')
+        
+        if re.search(r'\d', nombre):
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': 'El nombre no puede contener números'}, status=400)
+            messages.error(request, 'El nombre no puede contener números')
+            return redirect('negocios:mantenimiento_negocios')
+
+        try:
+            if tipo == 'estado':
+                estado = get_object_or_404(EstadoNegocio, idEstadoNegocio=item_id)
+                estado.nombre = nombre
+                estado.save()
+                mensaje = f"Estado '{nombre}' ha sido actualizado exitosamente"
+                
+                if is_ajax:
+                    return JsonResponse({
+                        'success': True,
+                        'message': mensaje,
+                        'data': {
+                            'id': estado.idEstadoNegocio,
+                            'nombre': estado.nombre
+                        }
+                    })
+                messages.success(request, mensaje)
+
+            elif tipo == 'categoria':
+                categoria = get_object_or_404(Categoria, idCategoria=item_id)
+                categoria.nombre = nombre
+                categoria.save()
+                mensaje = f"Categoría '{nombre}' ha sido actualizado correctamente"
+
+                if is_ajax:
+                    return JsonResponse({
+                        'success': True,
+                        'message': mensaje,
+                        'data': {
+                            'id': categoria.idCategoria,
+                            'nombre': categoria.nombre
+                        }
+                    })
+                messages.success(request, mensaje)
+
+        except Exception as e:
+            error_msg = f'Error al actualizar: {str(e)}'
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': error_msg}, status=500)
+            messages.error(request, error_msg)
+
+        return redirect('negocios:mantenimiento_negocios')
+    
+    # Mostrar los elementos 
+    estados = EstadoNegocio.objects.all().order_by('idEstadoNegocio')
+    categorias = Categoria.objects.all().order_by('idCategoria')
+
+    return render(request, 'negocios/mantenimiento_negocios.html', {
+        'estados': estados,
+        'categorias': categorias
+    })
+
+@require_http_methods(["POST"])
+def eliminar_elemento_negocio(request):
+    item_id = request.POST.get('item_id')
+    tipo = request.POST.get('tipo')
+
+    try:
+        if tipo == 'estado':
+            estado = get_object_or_404(EstadoNegocio, idEstadoNegocio=item_id)
+            nombre = estado.nombre
+            estado.delete()
+            messages.success(request, f"Estado '{nombre}' fue eliminado correctamente")
+        elif tipo == 'categoria':
+            categoria = get_object_or_404(Categoria, idCategoria=item_id)
+            nombre = categoria.nombre
+            categoria.delete()
+            messages.success(request, f"Categoria '{nombre}' fue eliminado correctamente")
+    except Exception as e:
+        messages.error(request, f'Error al eliminar el elemento: {str(e)}')
+    return redirect('negocios:mantenimiento_negocios')

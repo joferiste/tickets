@@ -9,7 +9,7 @@ from negocios.models import Negocio
 def calcular_ingresos_mes(year, month):
     """
     Calcula los ingresos totales de un mes específico.
-    Solo cuenta transacciones ÚNICAS con estado 'exitosa'.
+    Solo cuenta transacciones ÚNICAS con estado 'exitosa' y 'espera_acreditacion'.
     
     Returns:
         dict: {
@@ -23,7 +23,7 @@ def calcular_ingresos_mes(year, month):
     # Usar directamente la tabla Transaccion con estado actual
     resultado = Transaccion.objects.filter(
         periodo_pagado=periodo,
-        estado='exitosa'  # Solo contar las que están exitosas AHORA
+        estado__in=['exitosa', 'espera_acreditacion']  # Solo contar las que están exitosas y espera_acreditacion
     ).aggregate(
         total=Sum('monto'),
         cantidad=Count('idTransaccion')
@@ -147,7 +147,7 @@ def calcular_ingresos_por_negocio(year, month):
     # Agrupar por negocio usando estado ACTUAL de transacciones
     ingresos = Transaccion.objects.filter(
         periodo_pagado=periodo,
-        estado='exitosa'  # Solo exitosas
+        estado__in=['exitosa', 'espera_acreditacion']  # Solo exitosas y espera_acreditacion
     ).values(
         'negocio__idNegocio',
         'negocio__nombre'
@@ -188,10 +188,10 @@ def calcular_evolucion_diaria(year, month):
     
     periodo = f"{year}-{month:02d}"
     
-    # Obtener todas las transacciones exitosas del mes agrupadas por día
+    # Obtener todas las transacciones exitosas y con espera_acreditacion del mes agrupadas por día
     transacciones = Transaccion.objects.filter(
         periodo_pagado=periodo,
-        estado='exitosa'
+        estado__in=['exitosa', 'espera_acreditacion']
     ).annotate(
         dia=ExtractDay('fechaTransaccion')  # Usar fecha de transacción
     ).values('dia').annotate(
@@ -238,7 +238,7 @@ def calcular_estadisticas_mora(year, month):
     
     estadisticas = Transaccion.objects.filter(
         periodo_pagado=periodo,
-        estado='exitosa',
+        estado__in=['exitosa', 'espera_acreditacion'],
         mora_monto__gt=0
     ).aggregate(
         total_mora=Sum('mora_monto'),

@@ -13,13 +13,7 @@
 <div class="main-content">
     <div class="main-negocio">
         <h3 class="form-description"> Formulario para la creación de nuevos negocios </h3>   
-        {% if messages %}
-            <div class="message-container">
-                {% for message in messages %}
-                    <div class="alert"> {{ message }} </div>
-                {% endfor %}
-            </div>
-        {% endif %}
+        
         <div class="form-wrapper">
             <form method="POST" class="styled-form">
                 {% csrf_token %}
@@ -85,5 +79,10 @@
         </form>
     </div>
 </div>
+
+<!--Boton fuera del contenedor-->
+<a href="{% url 'negocios:mantenimiento_negocios' %}" class="maintenance-button-fixed">
+    Mantenimiento de elementos de negocios
+</a>
 
 {% endblock %}

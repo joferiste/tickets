@@ -64,11 +64,11 @@
 }
 
 .badge-estado.disponible {
-    background: #1cc243;
+    background: #2eca52;
 }
 
 .badge-estado.ocupado {
-    background: #ffc107;
+    background: #d8ea12;
     color: #333;
 }
 
@@ -137,8 +137,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .info-card:hover {
@@ -152,12 +151,12 @@
 }
 
 .info-card.ocupado {
-    background: linear-gradient(130deg, #ffcd37 0%, #fca21a 100%);
+    background: linear-gradient(130deg, #e7e42d 0%, #e6d626 100%);
     color: white;
 }
 
 .info-card.disponible {
-    background: linear-gradient(135deg, #20c997 0%, #3eca5f 100%);
+    background: linear-gradient(135deg, #38d1a3 0%, #35ba83 100%);
     color: white;
 }
 
@@ -188,6 +187,7 @@
 .card-label {
     font-size: 0.85rem;
     opacity: 0.85;
+    color: black;
 }
 
 /* Secciones */

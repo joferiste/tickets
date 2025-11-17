@@ -11,7 +11,6 @@ class EstadoNegocio(models.Model):
 
     def __str__(self):
         return self.nombre
-    
 
 class Categoria(models.Model):
     idCategoria = models.AutoField(primary_key=True)
@@ -19,8 +18,7 @@ class Categoria(models.Model):
 
     def __str__(self):
         return self.nombre
-    
-     
+
 class Negocio(models.Model):
     idNegocio = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)
@@ -36,7 +34,7 @@ class Negocio(models.Model):
 
     def __str__(self): 
         return self.nombre 
-    
+
     class Meta:
         verbose_name = "Negocio"
         verbose_name_plural = "Negocios"

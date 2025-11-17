@@ -1,307 +1,277 @@
-    function openEditModalNegocio(idNegocio) {
-        fetch(`/negocios/editar_negocio/${idNegocio}/`)
-            .then(response => {
-                if (!response.ok) throw new Error("Error en la respuesta del servidor");
-                return response.json();
-            })
-            .then(data => {
-                const modal = document.getElementById("modal");
-                const modalContent = document.getElementById("modal-content");
-
-                modalContent.innerHTML = data.html;
-                modal.classList.remove("hidden");
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                alert("Ocurrió un error al abrir el formulario de edición");
-            });
+// ============== Sistema de Mensajes Unificado ==============
+function mostrarMensajeFlash(mensaje, tipo = 'success') {
+    const mensajeAnterior = document.querySelector('.mensaje-dinamico');
+    if (mensajeAnterior) {
+        mensajeAnterior.remove();
     }
 
-   
+    let flashContainer = document.querySelector('.flash-container');
+    if (!flashContainer) {
+        flashContainer = document.createElement('div');
+        flashContainer.className = 'flash-container';
+        document.body.appendChild(flashContainer);
+    }
 
-    // Delegación del evento submit para formularios dinámicos
-    document.addEventListener("submit", function (e) {
-        console.log("Submit detectado en elemento ", e.target.tagName, "con ID", e.target.id);
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${tipo} mensaje-dinamico`;
+    alertDiv.innerHTML = `
+        ${mensaje}
+        <button class="alert-close" type="button" aria-label="Cerrar">&times;</button>
+    `;
 
-        if (e.target.matches("#formEditarNegocio")) {
-            console.log("🟢 Formulario de edicion detectado");
-            e.preventDefault();
-            e.stopPropagation();
+    flashContainer.appendChild(alertDiv);
 
-            const form = e.target;
-            const formData = new FormData(form);
+    const closeBtn = alertDiv.querySelector('.alert-close');
+    closeBtn.addEventListener('click', () => cerrarMensaje(alertDiv));
 
-            console.log("formData creado: ", [...formData.entries()])
+    setTimeout(() => cerrarMensaje(alertDiv), 5000);
+}
 
-            // Validacion del frontend antes de entrar al backend
-            if (!validarCamposFormulario()) {
-            console.log("❌ Validación de campos fallida.");
-            return; // Evita el envío si hay errores
+function cerrarMensaje(alertDiv) {
+    if (!alertDiv || alertDiv.classList.contains('alert-closing')) return;
+    
+    alertDiv.classList.add('alert-closing');
+    setTimeout(() => {
+        alertDiv.remove();
+        const flashContainer = document.querySelector('.flash-container');
+        if (flashContainer && flashContainer.children.length === 0) {
+            flashContainer.remove();
+        }
+    }, 600);
+}
+
+// ============== Funciones de Modal ==============
+function openEditModalNegocio(idNegocio) {
+    fetch(`/negocios/editar_negocio/${idNegocio}/`)
+        .then(response => {
+            if (!response.ok) throw new Error("Error en la respuesta del servidor");
+            return response.json();
+        })
+        .then(data => {
+            const modal = document.getElementById("modal");
+            const modalContent = document.getElementById("modal-content");
+            modalContent.innerHTML = data.html;
+            modal.removeAttribute('aria-hidden');
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            mostrarMensajeFlash("❌ Ocurrió un error al abrir el formulario", "error");
+        });
+}
+
+function openDeleteModalNegocio(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.setAttribute('aria-hidden', 'true');
+        document.getElementById("modal-content").innerHTML = "";
+    }
+}
+
+function openDeleteModal(id, nombre) {
+    document.getElementById('delete_id').value = id;
+    document.getElementById('delete_text').textContent = `¿Estás seguro de querer eliminar el negocio "${nombre}"?`;
+    const modal = document.getElementById('deleteModal');
+    modal.removeAttribute('aria-hidden');
+}
+
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.setAttribute('aria-hidden', 'true');
+}
+
+// ============== Formulario de Actualización ==============
+document.addEventListener("submit", function (e) {
+    if (e.target.matches("#formEditarNegocio")) {
+        console.log("🟢 Formulario de edición detectado");
+        e.preventDefault();
+        e.stopPropagation();
+
+        const form = e.target;
+        const formData = new FormData(form);
+
+        if (!validarCamposFormulario()) {
+            console.log("❌ Validación fallida");
+            return;
         }
 
-            if (!formData.get('id')){
-                console.error("id del negocio no encontrado en el formulario");
-                showAlert("Error: id de negocio no encontrado");
-                return;
+        if (!formData.get('id')) {
+            mostrarMensajeFlash("❌ Error: ID del negocio no encontrado", "error");
+            return;
+        }
+
+        const btnSubmit = form.querySelector('button[type="submit"]');
+        const textoOriginal = btnSubmit ? btnSubmit.textContent : '';
+        if (btnSubmit) {
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = 'Guardando...';
+        }
+
+        fetch("/negocios/actualizar_negocio/", {
+            method: "POST",
+            headers: {'X-CSRFToken': formData.get('csrfmiddlewaretoken')},
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                mostrarMensajeFlash(data.message, data.message_type || "success");
             }
 
-            console.log("Iniciando peticion AJAX...");
+            if (data.success) {
+                openDeleteModalNegocio("modal");
 
-            fetch("/negocios/actualizar_negocio/", {
-                method: "POST",
-                headers: {
-                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-                },
-                body: formData
-            })
-            .then(response => {
-                console.log("Respuesta recibida:", response.status);
-                if (!response.ok) {
-                    throw new Error (`HTTP error! status: ${response.status}`)
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log("Respuesta del servidor:", data)
-                if (data.success) {
-                    openDeleteModalNegocio("modal");
-                    showAlert("✅ Negocio actualizado correctamente", "success");
+                const fila = document.getElementById(`negocio-${data.negocio.id}`);
+                if (fila) {
+                    // Actualizar nombre y avatar
+                    const negocioNombre = fila.querySelector(".negocio-nombre");
+                    if (negocioNombre) negocioNombre.textContent = data.negocio.nombre;
 
-                    const fila = document.getElementById(`negocio-${data.negocio.id}`);
-                    if (fila) {
-                        fila.querySelector(".nombre").textContent = data.negocio.nombre;
-                        fila.querySelector(".descripcion").textContent = data.negocio.descripcion;
-                        fila.querySelector(".telefono1").textContent = data.negocio.telefono1;
-                        fila.querySelector(".telefono2").textContent = data.negocio.telefono2;
-                        fila.querySelector(".email").textContent = data.negocio.email;
-                        fila.querySelector(".nit").textContent = data.negocio.nit;
-                        fila.querySelector(".categoria").textContent = data.negocio.categoria;
-                        fila.querySelector(".usuario").textContent = data.negocio.usuario;
-                        fila.querySelector(".estado").textContent = data.negocio.estado;
+                    const negocioAvatar = fila.querySelector(".negocio-avatar");
+                    if (negocioAvatar) negocioAvatar.textContent = data.negocio.nombre.charAt(0).toUpperCase();
+
+                    const negocioDesc = fila.querySelector(".negocio-desc");
+                    if (negocioDesc) negocioDesc.textContent = data.negocio.descripcion.substring(0, 30) + '...';
+
+                    // Actualizar otros campos
+                    const categoriaCell = fila.querySelector("td.categoria .badge");
+                    if (categoriaCell) categoriaCell.textContent = data.negocio.categoria;
+
+                    const usuarioCell = fila.querySelector("td.usuario");
+                    if (usuarioCell) usuarioCell.textContent = data.negocio.usuario;
+
+                    const contactoInfo = fila.querySelector(".contacto-info");
+                    if (contactoInfo) {
+                        let html = `<span class="telefono1">📞 ${data.negocio.telefono1}</span>`;
+                        if (data.negocio.email) {
+                            html += `<span class="email">✉️ ${data.negocio.email}</span>`;
+                        }
+                        contactoInfo.innerHTML = html;
                     }
-                } else {
-                    // Reemplaza el contenido del modal con errores (mantiene funcionalidad del nuevo form)
-                    document.getElementById("modal-content").innerHTML = data.html;
+
+                    const estadoBadge = fila.querySelector(".badge-activo, .badge-inactivo");
+                    if (estadoBadge) {
+                        estadoBadge.className = `badge badge-${data.negocio.estado.toLowerCase()}`;
+                        estadoBadge.textContent = data.negocio.estado;
+                    }
+
+                    fila.style.animation = 'none';
+                    setTimeout(() => fila.style.animation = 'fadeIn 0.5s ease', 10);
                 }
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                showAlert("Ocurrió un error al actualizar el negocio", "error");
-            });
-        }
-    });
-
-    function showAlert(message, type = "success") {
-        const alertBox = document.getElementById("alert-container");
-
-        alertBox.className = `alert-container ${type} show`;
-        alertBox.textContent = message;
-
-        setTimeout(() => {
-            alertBox.classList.remove("show");
-        }, 4500);
+            } else if (data.html) {
+                document.getElementById("modal-content").innerHTML = data.html;
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            mostrarMensajeFlash("❌ Ocurrió un error al actualizar", "error");
+        })
+        .finally(() => {
+            if (btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = textoOriginal;
+            }
+        });
     }
+});
 
-    function validarCamposFormulario() {
+// ============== Validación ==============
+function validarCamposFormulario() {
     let valido = true;
-
     const campos = [
-        {
-            id: "id_nombre",
-            tipo: "texto",
-            mensaje: "El nombre sólo debe contener letras y no debe quedar vacío."
-        },
-                {
-            id: "id_descripcion",
-            tipo: "direcciones",
-            mensaje: "La dirección debe estar compuesta por letras y dígitos."
-        },
-                {
-            id: "id_nit",
-            tipo: "nit",
-            mensaje: "El nit debe estar compuesto por 6 a 9 dígitos."
-        },
-                {
-            id: "id_telefono1",
-            tipo: "telefonico",
-            mensaje: "El número telefónico debe de llevar el siguiente formato 44444444 o 4444-4444."
-        },
-                {
-            id: "id_telefono2",
-            tipo: "telefonicoNulo",
-            mensaje: "El número telefónico debe de llevar el siguiente formato 44444444 o 4444-4444."
-        },
-                {
-            id: "id_email",
-            tipo: "email",
-            mensaje: "Ajústese al formato de correo válido."
-        },
-        {
-            id: "id_estado",
-            tipo: "select",
-            mensaje: "Debe seleccionar un estado válido."
-        },
-
-        {
-            id: "id_categoria",
-            tipo: "select",
-            mensaje: "Debe seleccionar una categoría válida."
-        },
-
-        {
-            id: "id_usuario",
-            tipo: "select",
-            mensaje: "Debe seleccionar un usuario válido."
-        }
+        {id: "id_nombre", tipo: "texto", mensaje: "El nombre sólo debe contener letras."},
+        {id: "id_descripcion", tipo: "direcciones", mensaje: "La descripción debe contener letras y dígitos."},
+        {id: "id_nit", tipo: "nit", mensaje: "El NIT debe tener 6 a 9 dígitos."},
+        {id: "id_telefono1", tipo: "telefonico", mensaje: "Formato: 44444444 o 4444-4444."},
+        {id: "id_telefono2", tipo: "telefonicoNulo", mensaje: "Formato: 44444444 o 4444-4444."},
+        {id: "id_email", tipo: "email", mensaje: "Formato de correo inválido."},
+        {id: "id_estado", tipo: "select", mensaje: "Seleccione un estado."},
+        {id: "id_categoria", tipo: "select", mensaje: "Seleccione una categoría."},
+        {id: "id_usuario", tipo: "select", mensaje: "Seleccione un usuario."}
     ];
 
     campos.forEach(({ id, tipo, mensaje }) => {
         const campo = document.getElementById(id);
         const errorDiv = document.getElementById(`error-${id}`);
-
         if (!campo || !errorDiv) return;
 
         let error = false;
 
-        if (tipo === "texto") {
-            const regex = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/;
-            if (!regex.test(campo.value.trim())) error = true;
-        }
-
-        if (tipo === "direcciones") {
-            const regex = /^[A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s\-\.\,\;]+$/;
-            if (!regex.test(campo.value.trim())) error = true;
-        }
-
+        if (tipo === "texto" && !/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(campo.value.trim())) error = true;
+        if (tipo === "direcciones" && !/^[A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s\-\.\,\;]+$/.test(campo.value.trim())) error = true;
         if (tipo === "nit") {
-            const valor = campo.value.trim();
-            const regex = /^[1-9][0-9]{5,8}$/;
-
-            if (valor != "" && !regex.test(valor)){
-                error = true;
-            }
+            const val = campo.value.trim();
+            if (val !== "" && !/^[1-9][0-9]{5,8}$/.test(val)) error = true;
         }
-
-        if (tipo === "dpi") {
-            const regex = /^[1-9][0-9]{12}$/;
-            if (!regex.test(campo.value.trim())) error = true;
-        }
-
-        if (tipo === "telefonico") {
-            const regex = /^(?:[1-9][0-9]{7}|[1-9][0-9]{3}-[0-9]{4})$/;
-            if (!regex.test(campo.value.trim())) error = true;
-        }
-
+        if (tipo === "telefonico" && !/^(?:[1-9][0-9]{7}|[1-9][0-9]{3}-[0-9]{4})$/.test(campo.value.trim())) error = true;
         if (tipo === "telefonicoNulo") {
-            const valor = campo.value.trim();
-            const regex = /^(?:[1-9][0-9]{7}|[1-9][0-9]{3}-[0-9]{4})$/;          
-            if (valor != "" && !regex.test(valor)) {
-                error = true;
-            }
+            const val = campo.value.trim();
+            if (val !== "" && !/^(?:[1-9][0-9]{7}|[1-9][0-9]{3}-[0-9]{4})$/.test(val)) error = true;
         }
-        
         if (tipo === "email") {
-            const valor = campo.value.trim();
-            const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (valor != "" && !regex.test(valor)) {
-                error = true;
-            }
+            const val = campo.value.trim();
+            if (val !== "" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) error = true;
         }
-
-        if (tipo === "select") {
-            if (!campo.value || campo.value.trim() === "") error = true;
-        }
-
+        if (tipo === "select" && (!campo.value || campo.value.trim() === "")) error = true;
 
         if (error) {
-            campo.classList.add("input-error");
-            campo.classList.add('shake');
-            
-
-            setTimeout(() => {
-                campo.classList.remove('shake');
-            }, 550);
-
+            campo.classList.add("input-error", "shake");
+            setTimeout(() => campo.classList.remove("shake"), 550);
             errorDiv.textContent = mensaje;
             errorDiv.style.display = "block";
-            setTimeout(() => {
-                errorDiv.style.display = "none";
-            }, 4000);
+            setTimeout(() => errorDiv.style.display = "none", 4000);
             valido = false;
         } else {
-            
+            campo.classList.remove("input-error");
             errorDiv.textContent = "";
             errorDiv.style.display = "none";
         }
     });
 
-
     return valido;
-    }
+}
 
-       function openDeleteModalNegocio(id) {
-        document.getElementById(id).classList.add("hidden");
-        document.getElementById("modal-content").innerHTML = "";
-    } 
-
-    function openDeleteModal(id, nombre){
-        document.getElementById('delete_id').value = id;
-        document.getElementById('delete_text').textContent = `¿Estás seguro de querer eliminar al Negocio: "${nombre}"?`;
-        document.getElementById('deleteModal').classList.remove('hidden');
-
-    };
-
-    function closeModal(id){
-        document.getElementById(id).classList.add('hidden');
-    };
-
-
-
-    document.addEventListener("DOMContentLoaded", () => {
+// ============== Eliminación ==============
+document.addEventListener("DOMContentLoaded", () => {
     const deleteForm = document.querySelector("#deleteModal form");
-    const modalDelete = document.getElementById('deleteModal')
-    const modal = document.getElementById('modal');
+    
+    if (deleteForm) {
+        deleteForm.addEventListener("submit", function (e) {
+            e.preventDefault();
+            const formData = new FormData(deleteForm);
 
-    window.addEventListener('click', function (event) {
-        if (event.target === modalDelete) {
-            modalDelete.classList.add('hidden');
-        }
-    });
-
-    window.onclick = function (event) {
-        if (event.target === modal) {
-            modal.classList.add('hidden');
-        }
-    };
-
-    deleteForm.addEventListener("submit", function (e) {
-        e.preventDefault();
-        
-        const formData = new FormData(deleteForm);
-
-        fetch(deleteForm.action, {
-            method: "POST",
-            headers: {
-                "X-CSRFToken": formData.get("csrfmiddlewaretoken")
-            },
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                const fila = document.getElementById(`negocio-${data.negocio_id}`);
-                if (fila) fila.remove();
-
-                closeModal("deleteModal");
-                showAlert("✅ Negocio eliminado correctamente", "success");
-            } else {
-                closeModal("deleteModal");
-                showAlert(data.error || "❌ No se pudo eliminar el negocio", "error");
-            }
-        })
-        .catch(err => {
-            console.error("Error al eliminar:", err);
-            showAlert("❌ Error inesperado al intentar eliminar", "error");
+            fetch(deleteForm.action, {
+                method: "POST",
+                headers: {"X-CSRFToken": formData.get("csrfmiddlewaretoken")},
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const fila = document.getElementById(`negocio-${data.negocio_id}`);
+                    if (fila) {
+                        fila.style.animation = 'fadeOut 0.5s ease';
+                        setTimeout(() => fila.remove(), 500);
+                    }
+                    closeModal("deleteModal");
+                    mostrarMensajeFlash("✅ Negocio eliminado correctamente", "success");
+                } else {
+                    closeModal("deleteModal");
+                    mostrarMensajeFlash(data.error || "❌ No se pudo eliminar", "error");
+                }
+            })
+            .catch(err => {
+                console.error("Error:", err);
+                mostrarMensajeFlash("❌ Error al eliminar", "error");
+            });
         });
-    });
+    }
 });
+
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeOut {
+        from { opacity: 1; transform: scale(1); }
+        to { opacity: 0; transform: scale(0.95); }
+    }
+`;
+document.head.appendChild(style);

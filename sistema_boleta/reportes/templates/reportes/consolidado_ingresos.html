@@ -92,7 +92,7 @@
         <!-- Gráfico de Evolución Diaria -->
         <div class="grafico-card grande">
             <div class="grafico-header">
-                <h3>📈 Evolución de Ingresos</h3>
+                <h3>Evolución de Ingresos</h3>
                 <p>Ingresos diarios y acumulado del mes</p>
             </div>
             <div class="grafico-container">
@@ -103,7 +103,7 @@
         <!-- Gráfico de Top Negocios -->
         <div class="grafico-card">
             <div class="grafico-header">
-                <h3>🏆 Top Negocios</h3>
+                <h3> Top Negocios</h3>
                 <p>Mayores ingresos del mes</p>
             </div>
             <div class="grafico-container">
@@ -114,7 +114,7 @@
         <!-- Gráfico de Estados -->
         <div class="grafico-card">
             <div class="grafico-header">
-                <h3>🎯 Estados de Transacciones</h3>
+                <h3> Estados de Transacciones</h3>
                 <p>Distribución por estado</p>
             </div>
             <div class="grafico-container">
@@ -126,7 +126,7 @@
     <!-- Tabla de Negocios -->
     <div class="tabla-section">
         <div class="tabla-header">
-            <h3>📋 Detalle por Negocio</h3>
+            <h3>Detalle por Negocio</h3>
         </div>
         <div class="tabla-container">
             <table class="reportes-table">
@@ -140,7 +140,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for negocio in resumen.por_negocio %}
+                    {% for negocio in resumen.por_negocio %} 
                     <tr>
                         <td class="negocio-nombre">{{ negocio.negocio_nombre }}</td>
                         <td class="monto">{{ negocio.total|formatear_moneda }}</td>

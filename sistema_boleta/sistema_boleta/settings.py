@@ -15,27 +15,166 @@ from django.conf import settings
 from django.conf.urls.static import static
 from decouple import config
 import os
+import logging
 
+# ================================
+# CONFIGURACIÓN DE LOGIN SEGURO
+# ================================
 
-# ------ Configuracion del correo de entrada (Configuración IMAP de entrada de emails) ------------
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{levelname}] {asctime} {name} - {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'email_file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'logs/email_security.log',
+            'maxBytes': 5 * 1024 * 1024,  # 5MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'WARNING',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'email_security': {
+            'handlers': ['email_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+# ==========================================================
+# CONFIGURACION IMAP (ENTRADA)
+# ==========================================================
+
 IMAP_SERVER = config("IMAP_SERVER", default="imap.gmail.com")
 IMAP_PORT = config("EMAIL_PORT", cast=int, default=993)
 IMAP_USE_SSL = True
+
+# Credenciales (Usar app password)
 EMAIL_USERNAME = config("EMAIL_USERNAME")
 EMAIL_PASSWORD = config("EMAIL_PASSWORD")
 
-print("Servidor IMAP ", IMAP_SERVER)
+# Importante: No imprimir credenciales en produccion
+if not config("DEBUG", default=False, cast=bool):
+    print("Configuración IMAP cargada")
+else:
+    # Solo en desarrollo mostrar servidor 
+    print(f"[DEV] Servidor IMAP: {IMAP_SERVER}:{IMAP_PORT}")
 
-# ------ Configuracion del correo de salida (Configuración SMTP de salida de emails) ------------
+
+# =============================================================
+# ------ CONFIGURACION SMTP (SALIDA) ------------
+# =============================================================
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = config("SMTP_SERVER", default="smtp.gmail.com")
 EMAIL_PORT = config("SMTP_PORT", cast=int, default=465)
 EMAIL_USE_SSL = config("SMTP_USE_SSL", cast=bool, default=True)
+EMAIL_USE_TLS = config("SMTP_USE_TLS", cast=bool, default=False)
 EMAIL_HOST_USER = config("EMAIL_USERNAME")
 EMAIL_HOST_PASSWORD = config("EMAIL_PASSWORD") 
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="EMAIL_HOST_USER")
 
-print("Servidor SMTP ", EMAIL_HOST)
+# Timeout para conexiones SMTP
+EMAIL_TIMEOUT = 30
+
+if not config("DEBUG", default=False, cast=bool):
+    print("Configuración SMTP cargada")
+else:
+    print(f"[DEV] Servidor SMTP: {EMAIL_HOST}:{EMAIL_PORT}")
+
+
+# ===============================================================
+# CONFIGURACIÓN DE SEGURIDAD DE EMAIL
+# ===============================================================
+
+# Límite de intentos de conexión (protección contra fuerza bruta)
+EMAIL_MAX_ATTEMPTS = 5
+
+# Tamaño máximo de archivos adjuntos (5MB)
+MAX_EMAIL_ATTACHMENT_SIZE = 5 * 1024 * 1024
+
+# Límite de correos a procesar por ejecución
+MAX_EMAILS_PER_RUN = 50
+
+
+# ================================================================
+# VALIDACIÓN DE CONFIGURACIÓN
+# ================================================================
+
+def validar_configuracion_email():
+    """
+    Valida que la configuracion de email sea correcta y segura.
+    Se ejecuta al iniciar la aplicación.
+    """
+
+    errores = []
+    advertencias = []
+
+    # Verificar que SSL esté habilitado
+    if not IMAP_USE_SSL:
+        advertencias.append("IMAP SSL esté deshabilitado - conexión insegura.")
+
+    if not EMAIL_USE_SSL and not EMAIL_USE_TLS:
+        advertencias.append(" SMTP sin SSL/TLS - conexión insegura.")
+
+    # Verificar credenciales
+    if not EMAIL_USERNAME or not EMAIL_PASSWORD:
+        errores.append("Credenciales de email no configuradas.")
+
+    # Verificar App password 
+    if 'gmail.com' in IMAP_SERVER.lower():
+        if len(EMAIL_PASSWORD) < 16:
+            advertencias.append(
+                "La contrasena parece ser real, no APP password. "
+                "Se recomienda usar App password de gmail para mayor seguridad."
+            )
+
+    # Verificar puertos seguros
+    if IMAP_PORT not in [993, 143]:
+        advertencias.append(f"Puerto IMAP inusual: {IMAP_PORT}")
+
+    if EMAIL_PORT not in [465, 587]:
+        advertencias.append(f"Puerto SMTP inusual: {EMAIL_PORT}")
+
+    # Mostrar resultados
+    if errores:
+        for error in errores:
+            print(error)
+        raise Exception("Configuración de Email invalida")
+    
+    if advertencias and config("DEBUG", default=False, cast=bool):
+        for advertencia in advertencias:
+            print(advertencia)
+
+    print("Configuracion de email validada")
+
+
+# Ejecutar validacion al importar settings
+try:
+    validar_configuracion_email()
+except Exception as e:
+    if not config("DEBUG", default=False, cast=bool):
+        # En produccion, logear pero no detener la aplicacion
+        logging.error(f"Error de configuración de email: {e}")
+    else:
+        # En desarrollo, mostrar el error
+        raise
+
+
+# ============================================================    
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent

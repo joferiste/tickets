@@ -15,6 +15,5 @@ urlpatterns = [
     path("transaccion/<int:transaccion_id>/", views.perfil_transaccion, name='perfil_transaccion'),
     path('validar_transaccion/<int:transaccion_id>/', views.validar_transaccion, name='validar_transaccion'),
     path('generar_recibo/<int:transaccion_id>/', views.generar_recibo, name='generar_recibo'),
+    path('sandbox/eliminar/<int:boleta_id>', views.eliminar_boleta, name='eliminar_boleta'),
 ]
-
-

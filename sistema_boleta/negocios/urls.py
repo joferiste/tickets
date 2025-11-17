@@ -18,4 +18,7 @@ urlpatterns = [
     path('enviar_recibo/<int:recibo_id>/', views.enviar_recibo, name='enviar_recibo'),
     path('reenviar_recibo/<int:recibo_id>/', views.reenviar_recibo, name='reenviar_recibo'),
     path('recibo_detalles/<int:recibo_id>/', views.recibo_detalles, name='recibo_detalles'),
+    path('mantenimientos/', views.mantenimiento_negocios, name='mantenimiento_negocios'),
+    path('mantenimientos/eliminar/', views.eliminar_elemento_negocio, name='eliminar_elemento_negocio'),
+
 ]

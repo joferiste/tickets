@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from boletas.views import BoletaSandbox
-from boletas.models import Boleta, EstadoBoleta, TipoPago
+from boletas.models import Boleta, EstadoBoleta, TipoPago, BoletaSandbox
 from transacciones.models import Transaccion
 from boletas.services.email_ingestor.email_ingestor import procesar_correos
 from django.http import JsonResponse, HttpResponse
@@ -30,55 +30,128 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 from recibos.models import Recibo, EstadoRecibo
 import unicodedata
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.views.decorators.http import require_http_methods
+import logging
 
 def boletas_sandbox(request):
-    boletas = BoletaSandbox.objects.all().order_by('-fecha_recepcion')   
-
+    # Obtener todas las boletas
+    boletas_lista = BoletaSandbox.objects.all().order_by('-fecha_recepcion')
+    
+    # Configurar paginación
+    paginator = Paginator(boletas_lista, 6)  # 5 boletas por página
+    page_number = request.GET.get('page', 1)
+    
+    try:
+        boletas = paginator.page(page_number)
+    except PageNotAnInteger:
+        boletas = paginator.page(1)
+    except EmptyPage:
+        boletas = paginator.page(paginator.num_pages)
+    
     context = {
         'boletas': boletas,
-        'total_boletas': boletas.count(),
-        'unread_count': boletas.filter(leido=False).count(),
-        'processed_count': boletas.filter(estado_validacion='procesada').count(),
-        'pending_count': boletas.exclude(estado_validacion='procesada').count(),
+        'total_boletas': paginator.count,
+        'unread_count': boletas_lista.filter(leido=False).count(),
+        'processed_count': boletas_lista.filter(estado_validacion='procesada').count(),
+        'pending_count': boletas_lista.exclude(estado_validacion='procesada').count(),
     }
 
     return render(request, 'administracion/administracion.html', context)
 
 
 def revisar_correos(request):
-    if request.method == 'POST':
+    if request.method == 'POST': 
         try:
             cantidad = procesar_correos()
             if cantidad is None:
                 cantidad = 0
-            return JsonResponse({"mensaje": f"{cantidad} correos procesados."}, status=200)
+
+            messages.success(request, f"{cantidad} correos procesados correctamente.")
+
+            # Retornar solo success: true
+            return JsonResponse({"success": True}, status=200)
+        
         except Exception as e:
-            print(f"[ERROR] Fallo al procesar correos: {e}")
-            return JsonResponse({"mensaje": "Error interno al procesar el correo."}, status=500)
-    return JsonResponse({'mensaje': 'Método no permitido'}, status=405)
+            print(f"[ERROR] Falló al procesar correos: {e}")
+            messages.error(request, "Error interno al procesar el correo.")
+            return JsonResponse({
+                "success": False
+                }, status=500)
+        
+    messages.error(request, 'Metodo no permitido')
+    return JsonResponse({
+        'success': False
+        }, status=405)
 
 
 def boleta_detalle(request, boleta_id):
     boleta = get_object_or_404(BoletaSandbox, id=boleta_id)
+    negocio_id = boleta.metadata.get("negocio_id") if boleta.metadata else None
+    negocio = None
 
+    # Nivel 1: Validacion de EMAIL (primera prioridad   )
+    if negocio_id:
+        negocio = Negocio.objects.filter(idNegocio=negocio_id).first()
+
+    # Verificar si el email del remitente coincide con algun negocio    
+    email_entrante = boleta.remitente.lower().strip()
+    email_valido = False
+
+    if negocio:
+        # Si hay negocio asociados con metadata, verificar si el email coincide
+        email_negocio = negocio.email.lower().strip()
+        email_valido = (email_entrante == email_negocio)
+    else:
+        # Si no hay negocio en metadata, buscar en todos los negocios
+        negocio = Negocio.objects.filter(email__iexact=email_entrante).first()
+        email_valido = negocio is not None
+
+    # Si el email no es valido, marcar como rechazada y mostrar pagina especial
+    if not email_valido:
+        if boleta.estado_validacion != 'rechazada':
+            boleta.estado_validacion = 'rechazada'
+            boleta.motivo_rechazo = 'Email del remitente no reconocido en el sistema.'
+            boleta.es_valida = False
+
+        # Programar eliminacion
+        if boleta.fecha_eliminacion:
+            boleta.fecha_eliminacion = boleta.fecha_recepcion + timedelta(days=8)
+
+        boleta.save(update_fields=['estado_validacion', 'motivo_rechazo', 'es_valida', 'fecha_eliminacion'])
+
+        return render(request, 'administracion/sin_remitente.html', {'sandbox': boleta, 'email_entrante': email_entrante})
+
+
+    # Nivel 2: Validacion de imagen
     # CASO ESPECIAL: Si no tiene imagen, redirigir a pagina especial
+
     if not boleta.imagen:
         # Calcular fecha de eliminacion si no existe
+        if boleta.estado_validacion != 'sin_imagen':
+            boleta.estado_validacion = 'sin_imagen'
+            boleta.motivo_rechazo = 'Correo recibido sin imagen adjunta.'
+            boleta.es_valida = False
+
+        # Programacion de eliminacion
         if not boleta.fecha_eliminacion:
             boleta.fecha_eliminacion = boleta.fecha_recepcion + timedelta(days=8)
-            boleta.save(update_fields=['fecha_eliminacion'])
+
+        boleta.save(update_fields=['estado_validacion', 'motivo_rechazo', 'es_valida', 'fecha_eliminacion'])
 
         return render(request, 'administracion/sin_imagen.html', {'sandbox': boleta})
 
+
+    # Nivel 3: Validacion de estado rechazada 
     if boleta.estado_validacion == 'rechazada':
         if not boleta.fecha_eliminacion:
             boleta.fecha_eliminacion = boleta.fecha_recepcion + timedelta(days=8)
             boleta.save(update_fields=['fecha_eliminacion'])
 
         return render(request, 'administracion/rechazada.html', {'sandbox': boleta})
+    
 
-    negocio_id = boleta.metadata.get("negocio_id")
-    negocio = Negocio.objects.filter(idNegocio=negocio_id).first()
+    # Flujo normal
     print("[DEBUG] Negocio:", negocio)
 
     ocupacion = OcupacionLocal.objects.filter(negocio=negocio, fecha_fin__isnull=True).first()
@@ -99,7 +172,7 @@ def boletas_sandbox_parcial(request):
     html = render_to_string('administracion/_tabla_boletas.html', {'boletas':boletas})
     return JsonResponse({'html':html})
 
-
+  
 @require_POST
 def eliminar_sandbox(request, boleta_id):
     boleta = get_object_or_404(BoletaSandbox, id=boleta_id)
@@ -112,7 +185,7 @@ def eliminar_sandbox(request, boleta_id):
         return redirect('administracion:boletas_sandbox')
     else:
         messages.error(request, "Sólo se pueden eliminar boletas rechazadas o sin imagen")
-    return redirect('administracion:boleta_detalle', boleta_id=boleta.id)  # O adonde quieras redirigir
+    return redirect('administracion:boleta_detalle', boleta_id=boleta.id)  
 
 def formatear_periodo(periodo_str):
     """ Convierte 2025-09 a Septiembre de 2025 """
@@ -801,6 +874,12 @@ def perfil_transaccion(request, transaccion_id):
     # Negocio y locales
     negocio = boleta.negocio
 
+    dias_mora = transaccion.dias_mora_actuales
+
+    
+
+    dias_restantes = transaccion.dias_para_limite
+
     # Ocupaciones activas del negocio
     ocup_qs = (
         OcupacionLocal.objects
@@ -834,6 +913,7 @@ def perfil_transaccion(request, transaccion_id):
 
     context = {
         "transaccion": transaccion,
+        "dias_mora": dias_mora,
         "boleta": boleta,
         "negocio": negocio,
         "locales": locales,
@@ -1088,3 +1168,70 @@ def generar_recibo(request, transaccion_id):
             'status': 'error',
             'message': f'Error al generar recibo: {str(e)}'
         })
+    
+    
+logger = logging.getLogger(__name__)
+
+@login_required
+@require_http_methods(["POST"])
+def eliminar_boleta(request, boleta_id):
+    """Eliminar una boleta del sandbox de manera permanente.
+    Solo se puede eliminar una boleta rechazada o sin imagen
+    """
+
+    try:
+        # Obtener la boleta
+        boleta = get_object_or_404(BoletaSandbox, id=boleta_id)
+
+        # Verificar que la boleta este en un estado que permita la eliminacion
+        estados_permitidos = ['rechazada', 'sin_imagen']
+
+        if boleta.estado_validacion not in estados_permitidos:
+            messages.warning(
+                request,
+                f'No se puede eliminar esta boleta',
+                f'Solo se puede eliminar boletas rechazadas o sin imagen'
+                f'Estado actual: {boleta.get_estado_validacion_display()}'
+            )
+            return redirect('administracion:boletas_sandbox')
+        
+        # Guardar informacion para el log y mensaje
+        boleta_info = {
+            'id': boleta.id,
+            'remitente': boleta.remitente,
+            'estado': boleta.estado_validacion,
+            'motivo': boleta.motivo_rechazo or 'No especificado',
+            'fecha_recepcion': boleta.fecha_recepcion
+        }
+
+        # Eliminar boleta
+        boleta.delete()
+
+        """
+        # Log de eliminacion
+        logger.info(
+            f"[ELIMINACIÓN MANUAL] Boleta eliminada por usuario {request.user.username}: "
+            f"ID={boleta_info['id']}, Remitente={boleta_info['remitente']}, "
+            f"Estado={boleta_info['estado']}"
+        )
+        """
+
+        # Mensaje de exito
+        messages.success(
+            request,
+            f'¡Boleta eliminada correctamente!'
+            f'\nRemitente: {boleta_info["remitente"]} | '
+            f'\nEstado: {boleta_info["estado"]}'
+        )
+    except BoletaSandbox.DoesNotExist:
+        messages.error(
+            request,
+            '❌ La boleta que intentas eliminar no existe o ya fue eliminada'
+        )
+    except Exception as e:
+        messages.error(
+            request,
+            f'❌ Error al eliminar la boleta: {str(e)}'
+        )
+
+    return redirect('administracion:boletas_sandbox')

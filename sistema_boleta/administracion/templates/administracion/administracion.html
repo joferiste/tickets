@@ -11,18 +11,17 @@
 <link rel="stylesheet" href="{% static 'administracion/css/admin_style.css' %}">
 <script src="{% static 'administracion/js/admin_scripts.js' %}"> </script>
 
-<div class="inbox-container">
+<div class="inbox-container"> 
     <!-- Header del inbox -->
     <div class="inbox-header">
         <div class="header-content">
             <div class="header-left">
                 <h1> Administración de boletas entrantes </h1>
                 <div class="header-subtitle">
-                    Gestiona y procesa las boletas recibidas por correo electronico
+                    Gestiona y procesa las boletas recibidas por correo electrónico.
                 </div>
             </div>
             <div class="header-actions">
-                <div id="mensaje-correos" class="status-message" style="display: none;"></div>
                 <button class="btn-refresh" id="btn-revisar-correos">
                     <span class="btn-icon"> 📧 </span>
                     <span class="btn-text"> Visualizar correos entrantes </span>
@@ -30,25 +29,6 @@
             </div>
         </div>
 
-        <!-- Stats del inbox -->
-        <div class="inbox-stats">
-            <div class="stat-card">
-                <div class="stat-number">{{ total_boletas }}</div>
-                <div class="stat-label">Total Boletas</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">{{ unread_count }}</div>
-                <div class="stat-label">No Leídas</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">{{ processed_count }}</div>
-                <div class="stat-label">Procesadas</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">{{ pending_count }}</div>
-                <div class="stat-label">Pendientes</div>
-            </div>
-        </div>
     </div>
 
 <!-- Tabla de boletas -->
@@ -57,9 +37,9 @@
             <h2>Boletas Recibidas</h2>
             <div class="table-filters">
                 <select class="filter-select">
-                    <option value="">Todos los estados</option>
-                    <option value="pendiente">Pendientes</option>
-                    <option value="procesada">Procesadas</option>
+                    <option value="">Todos los estados ({{ total_boletas }})</option>
+                    <option value="nuevo">Nuevos ({{ pending_count }})</option>
+                    <option value="procesada">Procesadas ({{ processed_count }})</option>
                 </select>
             </div>
         </div>
@@ -70,7 +50,7 @@
                     <tr>
                         <th class="col-status">Estado</th>
                         <th class="col-sender">Remitente</th>
-                        <th class="col-subject">Asunto</th>
+                        <th class="col-subject">Asunto</th> 
                         <th class="col-date">Fecha</th>
                         <th class="col-business">Negocio Detectado</th>
                         <th class="col-actions">Acciones</th>
@@ -80,7 +60,110 @@
                     {% include 'administracion/_tabla_boletas.html' %}
                 </tbody>
             </table>
+                {% if boletas.has_other_pages %}
+                    <div class="inbox-pagination">
+                        <div class="pagination-info">
+                            <span>Mostrando {{ boletas.start_index }} - {{ boletas.end_index }} de {{ total_boletas }}</span>
+                        </div>
+                        
+                        <div class="pagination-controls">
+                            {% if boletas.has_previous %}
+                                <a href="?page=1" class="page-btn page-first" title="Primera página">«</a>
+                                <a href="?page={{ boletas.previous_page_number }}" class="page-btn page-prev" title="Anterior">‹</a>
+                            {% else %}
+                                <span class="page-btn page-disabled">«</span>
+                                <span class="page-btn page-disabled">‹</span>
+                            {% endif %}
+
+                            <div class="page-numbers">
+                                {% for num in boletas.paginator.page_range %}
+                                    {% if boletas.number == num %}
+                                        <span class="page-btn page-current">{{ num }}</span>
+                                    {% elif num > boletas.number|add:'-3' and num < boletas.number|add:'3' %}
+                                        <a href="?page={{ num }}" class="page-btn">{{ num }}</a>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+
+                            {% if boletas.has_next %}
+                                <a href="?page={{ boletas.next_page_number }}" class="page-btn page-next" title="Siguiente">›</a>
+                                <a href="?page={{ boletas.paginator.num_pages }}" class="page-btn page-last" title="Última página">»</a>
+                            {% else %}
+                                <span class="page-btn page-disabled">›</span>
+                                <span class="page-btn page-disabled">»</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="pagination-summary">
+                            Página {{ boletas.number }} de {{ boletas.paginator.num_pages }}
+                        </div>
+                    </div>
+                {% endif %}
         </div>
+    </div>
+</div>
+
+<div id="modal-eliminar-boleta" class="modal">
+    <div class="modal-overlay" onclick="cerrarModalEliminar()"></div>
+    <div class="modal-content modal-eliminar">
+        <div class="modal-header">
+            <div class="icono-advertencia">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                    <path d="M24 16V24M24 32H24.02M10.9 40H37.1C39.6 40 41.2 37.2 40 35L26.9 11C25.7 8.8 22.3 8.8 21.1 11L8 35C6.8 37.2 8.4 40 10.9 40Z" 
+                        stroke="#dc3545" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <button class="modal-close" onclick="cerrarModalEliminar()">&times;</button>
+        </div>
+        
+        <form id="form-eliminar-boleta" method="POST" action="" data-url-base="{% url 'administracion:boletas_sandbox' %}">
+            {% csrf_token %}
+            <input type="hidden" id="boleta-id-eliminar" name="boleta_id">
+            
+            <div class="modal-body">
+                <h3>¿Estás seguro?</h3>
+                <div class="mensaje-confirmacion">
+                    <p>Estás a punto de eliminar la siguiente boleta</p>
+                    <div class="elemento-eliminar">
+                        <div class="detalle-boleta">
+                            <span class="label">Remitente</span>
+                            <strong id="boleta-remitente"></strong>
+                        </div>
+                        <div class="detalle-boleta">
+                            <span class="label">Estado</span>
+                            <span class="badge" id="boleta-estado-badge"></span>
+                        </div>
+                        <div class="detalle-boleta">
+                            <span class="label">Fecha</span>
+                            <span id="boleta-fecha"></span>
+                        </div>
+                        <div class="detalle-boleta" id="motivo-container" style="display: none;">
+                            <span class="label">Motivo</span>
+                            <span id="boleta-motivo"></span>
+                        </div>
+                    </div>
+                    <p class="advertencia-texto">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        Esta acción no se puede deshacer. La boleta será eliminada permanentemente.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn-secundario" onclick="cerrarModalEliminar()">Cancelar</button>
+                <button type="submit" class="btn-peligro" id="btn-confirmar-eliminar">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M2 4H3.33333H14M5.33333 4V2.66667C5.33333 2.31304 5.47381 1.97391 5.72386 1.72386C5.97391 1.47381 6.31304 1.33333 6.66667 1.33333H9.33333C9.68696 1.33333 10.0261 1.47381 10.2761 1.72386C10.5262 1.97391 10.6667 2.31304 10.6667 2.66667V4M12.6667 4V13.3333C12.6667 13.687 12.5262 14.0261 12.2761 14.2761C12.0261 14.5262 11.687 14.6667 11.3333 14.6667H4.66667C4.31304 14.6667 3.97391 14.5262 3.72386 14.2761C3.47381 14.0261 3.33333 13.687 3.33333 13.3333V4H12.6667Z" 
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Eliminar Boleta
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 

@@ -5,7 +5,7 @@
     margin: 0 auto;
     padding: 20px;
     margin-left: 220px;
-    animation: fadeIn 0.8s ease-in-out;
+    animation: fadeIn 0.8s ease-in-out; 
 }
 
 /* ========== Transición de los elementos pantalla principal =========== */
@@ -18,7 +18,7 @@
 .info-section {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
+    gap: 10px;
     margin-bottom: 15px;
 }
 
@@ -34,7 +34,7 @@
 }
 
 .info-card:hover {
-    transform: translateY(-2px);
+    transform: translateY(-4px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -170,7 +170,7 @@
 
 .timeline-item {
     position: relative;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .timeline-marker {

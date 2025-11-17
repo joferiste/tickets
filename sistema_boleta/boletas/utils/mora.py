@@ -68,6 +68,7 @@ def evaluar_pago(fecha_original, forma_pago, costo_local, monto_boleta, negocio=
     mora_monto = (costo_total * (mora_porcentaje / Decimal("100"))).quantize(Decimal("0.01"))
     mora_aplicada = False
     
+    
     #   Inicializar dias_mora para ambos casos
     hoy = datetime.now(dt_timezone.utc).date()
     dias_mora = (hoy - base_fecha.date()).days
@@ -75,7 +76,7 @@ def evaluar_pago(fecha_original, forma_pago, costo_local, monto_boleta, negocio=
     # --- Si el mes YA está pagado, asignar al primer mes libre hacia adelante ---
     if negocio:
         ya_pagados = set(
-            Transaccion.objects.filter(
+            Transaccion.objects.filter( 
                 negocio=negocio,
                 estado__in=['exitosa', 'espera_acreditacion', 'espera_confirmacion', 'espera_confirmacion_faltante']
             ).values_list('periodo_pagado', flat=True)

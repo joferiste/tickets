@@ -37,11 +37,15 @@
 }
 
 .tabla-asignaciones th {
-    background-color: #4b3bfc;
+    background-color: #6356fb;
     color: white;
     padding: 10px;
+    font-weight: 500;
     border-bottom: 1px solid #ccc;
     text-align: center;
+    font-size: 13.2px;
+    font-weight: 600;
+    text-transform: uppercase;
 }
 
 .tabla-asignaciones thead th:first-child {

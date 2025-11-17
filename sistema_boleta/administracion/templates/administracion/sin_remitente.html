@@ -1,0 +1,31 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %} Correo electrónico sin imagen {% endblock %}
+
+{% block page_title %} Correo electrónico sin imagen adjunta {% endblock %}
+
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'administracion/css/sin_remitente.css' %}">
+
+<div class="sandbox-container">
+    <div class="alerta-sin-remitente">
+        <div class="icono-alerta">⚠️</div>
+        
+        <h2 class="titulo-alerta">Remitente no reconocido</h2>
+        
+        <p class="mensaje-alerta">
+            Este correo ha sido bloqueado porque no proviene de una fuente confiable.
+        </p>
+        
+
+        
+        <a href="{% url 'administracion:boletas_sandbox' %}" class="btn-volver">
+            Volver a lista de correos
+        </a>
+    </div>
+</div>
+
+
+{% endblock %}

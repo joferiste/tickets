@@ -91,7 +91,7 @@ def crear_banco(request):
     return JsonResponse({"success": False, "error": "Petición Inválida"})
 
 
-def mantenimientos(request):
+def mantenimientos(request): 
     bancos = Banco.objects.all().order_by('id')
 
     return render(request, 'configuracion/mantenimientos.html', {'bancos': bancos})

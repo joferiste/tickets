@@ -120,7 +120,7 @@
                     <div class="timeline-marker {% if pago.tuvo_mora %}mora{% endif %}"></div>
                     <div class="timeline-content">
                         <div class="timeline-date">{{ pago.fecha|date:"l\, d \d\e F \d\e Y \a \l\a\s H:i"|capfirst }}</div>
-                        <div class="timeline-periodo">Pago correspondiente al período de: {{ pago.periodo|periodo_legible }}</div>
+                        <div class="timeline-periodo">Pago correspondiente al período de {{ pago.periodo|periodo_legible }}</div>
                         <div class="timeline-details">
                             <span class="timeline-badge badge-monto">{{ pago.monto|currency }}</span>
                             <span class="timeline-badge badge-metodo">{{ pago.metodo|capfirst }}</span>

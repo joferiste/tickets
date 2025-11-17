@@ -229,7 +229,6 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('✓ Perfil del local cargado correctamente');
 });
 
-// Al final de detalle_local.js
 // Animaciones CSS adicionales
 if (!document.getElementById('detalle-local-styles')) {
     const style = document.createElement('style');

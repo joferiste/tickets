@@ -1,0 +1,643 @@
+/* ===================================
+   CONTENEDOR PRINCIPAL
+   =================================== */
+.mantenimiento-container {
+    margin-left: 250px;
+    margin-top: 20px;
+    margin-right: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    min-height: calc(100vh - 100px);
+}
+
+.mantenimiento-header {
+    margin-bottom: 30px;
+}
+
+.mantenimiento-header h2 {
+    color: #2c3e50;
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0;
+}
+
+
+/* ===================================
+   SISTEMA DE PESTAÑAS
+   =================================== */
+.tabs-container {
+    display: flex;
+    gap: 0;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #dee2e6;
+    background: white;
+    border-radius: 8px 8px 0 0;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.tab-button {
+    flex: 1;
+    padding: 16px 24px;
+    background: #f8f9fa;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+    color: #6c757d;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.tab-button:hover {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.tab-button.active {
+    background: white;
+    color: #007bff;
+    border-bottom-color: #007bff;
+}
+
+.tab-icon {
+    font-size: 18px;
+}
+
+/* ===================================
+   CONTENIDO DE PESTAÑAS
+   =================================== */
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===================================
+   TABLA DE MANTENIMIENTO
+   =================================== */
+.tabla-wrapper {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.tabla-mantenimiento {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.tabla-mantenimiento thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.tabla-mantenimiento thead th {
+    padding: 16px 20px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tabla-mantenimiento tbody tr {
+    border-bottom: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.tabla-mantenimiento tbody tr:hover {
+    background: #f8f9fa;
+    transform: translateX(4px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.tabla-mantenimiento tbody tr:last-child {
+    border-bottom: none;
+}
+
+.tabla-mantenimiento td {
+    padding: 16px 20px;
+    font-size: 14px;
+    color: #495057;
+}
+
+.id-column {
+    color: #6c757d;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+}
+
+.nombre-column {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.acciones-column {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* ===================================
+   BOTONES DE ACCIÓN
+   =================================== */
+.btn-accion {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-editar {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.btn-editar:hover {
+    background: #1976d2;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(25, 118, 210, 0.3);
+}
+
+.btn-eliminar {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.btn-eliminar:hover {
+    background: #c62828;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(198, 40, 40, 0.3);
+}
+
+/* ===================================
+   ESTADO VACÍO
+   =================================== */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px !important;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.empty-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.empty-state p {
+    color: #6c757d;
+    font-size: 16px;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* ===================================
+   MODALES
+   =================================== */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    animation: slideUp 0.3s ease;
+    z-index: 1001;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #6c757d;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+/* ===================================
+   FORMULARIOS
+   =================================== */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #495057;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.required {
+    color: #dc3545;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+/* Input con prefijo (para moneda) */
+.input-with-prefix {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-prefix {
+    position: absolute;
+    left: 16px;
+    color: #6c757d;
+    font-weight: 600;
+    font-size: 14px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.form-control.with-prefix {
+    padding-left: 38px;
+}
+
+/* Hint text */
+.form-hint {
+    display: block;
+    margin-top: 6px;
+    color: #6c757d;
+    font-size: 12px;
+    font-style: italic;
+}
+
+/* Select styling */
+select.form-control {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23495057' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+    cursor: pointer;
+}
+
+select.form-control:focus {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23007bff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+}
+
+/* Columnas específicas de tablas */
+.costo-column {
+    font-weight: 600;
+    color: #28a745;
+    font-family: 'Courier New', monospace;
+}
+
+.ubicacion-column {
+    color: #6c757d;
+    font-size: 13px;
+}
+
+/* ===================================
+   BOTONES DE MODAL
+   =================================== */
+.btn-primario,
+.btn-secundario,
+.btn-peligro {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primario {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primario:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secundario {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.btn-secundario:hover {
+    background: #dee2e6;
+}
+
+.btn-peligro {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-peligro:hover {
+    background: #c82333;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(220, 53, 69, 0.4);
+}
+
+/* ===================================
+   MODAL DE ELIMINACIÓN
+   =================================== */
+.modal-eliminar .modal-header {
+    border-bottom: none;
+    padding-bottom: 0;
+    flex-direction: column;
+    align-items: center;
+}
+
+.icono-advertencia {
+    margin-bottom: 16px;
+}
+
+.modal-eliminar h3 {
+    text-align: center;
+    color: #dc3545;
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.mensaje-confirmacion {
+    text-align: center;
+    color: #6c757d;
+}
+
+.mensaje-confirmacion p {
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+.elemento-eliminar {
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 20px 0;
+}
+
+.elemento-eliminar strong {
+    color: #856404;
+    font-size: 16px;
+}
+
+.advertencia-texto {
+    color: #dc3545;
+    font-weight: 500;
+    font-size: 13px;
+}
+
+/* ===================================
+   NOTIFICACIONES TOAST
+   =================================== */
+.notificacion-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    padding: 16px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 300px;
+    transform: translateX(400px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 10000;
+}
+
+.notificacion-toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.notificacion-icono {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.notificacion-success {
+    border-left: 4px solid #28a745;
+}
+
+.notificacion-success .notificacion-icono {
+    background: #28a745;
+    color: white;
+}
+
+.notificacion-error {
+    border-left: 4px solid #dc3545;
+}
+
+.notificacion-error .notificacion-icono {
+    background: #dc3545;
+    color: white;
+}
+
+.notificacion-warning {
+    border-left: 4px solid #ffc107;
+}
+
+.notificacion-warning .notificacion-icono {
+    background: #ffc107;
+    color: #333;
+}
+
+.notificacion-mensaje {
+    color: #495057;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ===================================
+   RESPONSIVE
+   =================================== */
+@media (max-width: 768px) {
+    .notificacion-toast {
+        right: 10px;
+        left: 10px;
+        min-width: auto;
+        top: 10px;
+    }
+
+    .mantenimiento-container {
+        padding: 15px;
+    }
+
+    .tabs-container {
+        flex-direction: column;
+    }
+
+    .tab-button {
+        border-bottom: 1px solid #dee2e6;
+        border-left: 3px solid transparent;
+    }
+
+    .tab-button.active {
+        border-left-color: #007bff;
+        border-bottom-color: #dee2e6;
+    }
+
+    .tabla-wrapper {
+        overflow-x: auto;
+    }
+
+    .tabla-mantenimiento {
+        min-width: 600px;
+    }
+
+    .acciones-column {
+        flex-direction: column;
+    }
+
+    .btn-accion {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: 15px;
+    }
+
+    .modal-footer {
+        flex-direction: column-reverse;
+    }
+
+    .btn-primario,
+    .btn-secundario,
+    .btn-peligro {
+        width: 100%;
+        justify-content: center;
+    }
+}

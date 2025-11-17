@@ -8,6 +8,9 @@ import json
 from django.views.decorators.http import require_POST
 from django.db.models import ProtectedError
 from django.template.loader import render_to_string
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+import re
+from django.views.decorators.http import require_http_methods
 
 def CreacionUsuarios(request):
     if request.method == 'POST':
@@ -58,20 +61,37 @@ def crear_estado(request):
 
 
 def visualizar_usuario(request):
+    usuarios_lista = Usuario.objects.all().order_by('-fechaCreacion')
+
     if request.method == "POST":
         form = BusquedaUsuarioForm(request.POST)
+        if form.is_valid():
+            q = form.cleaned_data.get('q', '').strip()
+            if q:
+                usuarios_lista = usuarios_lista.filter(nombre__icontains=q)
     else:
         form = BusquedaUsuarioForm()
 
-    usuarios = Usuario.objects.all()
-    estados = EstadoUsuario.objects.all()
+    # Configurar paginacion
+    paginator = Paginator(usuarios_lista, 5)
+    page_number = request.GET.get('page', 1)    
 
-    if form.is_valid():
-        q = form.cleaned_data.get('q')
-        if q:
-            usuarios = usuarios.filter(nombre__icontains=q)
+    try:
+        usuarios = paginator.page(page_number)
+    except PageNotAnInteger:
+        # Si page no es un entero, mostrar la primera pagina
+        usuarios = paginator.page(1)
+    except EmptyPage:
+        # Si page esta fuera de rango, mostrar la ultima pagina
+        usuarios = paginator.page(paginator.num_pages)
 
-    return render(request, 'usuarios/visualizar_usuarios.html', {'form': form, 'usuarios': usuarios, 'estados': estados}) 
+    context = {
+        'form': form,
+        'usuarios': usuarios,
+        'total_usuarios': paginator.count,
+    }
+
+    return render(request, 'usuarios/visualizar_usuarios.html', context) 
 
 
 def editar_usuario(request, id):
@@ -91,15 +111,22 @@ def actualizar_usuario(request):
     usuario_id = request.POST.get('id')
     
     if not usuario_id:
-        return JsonResponse({"success": False, "error":"id de usuario no proporcionado"})
+        return JsonResponse({
+                "success": False, 
+                "error": "id de usuario no proporcionado",
+                "message": "Error: ID del local no encontrado",
+                "message_type": "error",
+                })
     
-    usuario = get_object_or_404(Usuario, idUsuario = usuario_id)
+    usuario = get_object_or_404(Usuario, idUsuario=usuario_id)
     form = UsuarioForm(request.POST, instance=usuario)
 
     if form.is_valid():
         form.save()
         return JsonResponse({
             "success": True,
+            "message": "✅ Usuario actualizado correctamente",
+            "message_type": "success",
             "usuario": {
                 "id": usuario.idUsuario,
                 "nombre": usuario.nombre,
@@ -119,7 +146,12 @@ def actualizar_usuario(request):
             "form": form,
             "usuario": usuario
         }, request=request)
-        return JsonResponse({"success": False, "html": html})
+        return JsonResponse({
+            "success": False, 
+            "html": html,
+            "message":"Error al procesar la actualización",
+            "message_type": "error"
+            })
 
 
 @require_POST
@@ -152,7 +184,7 @@ def usuario_negocio(request):
             negocio = form.cleaned_data['negocio']
             negocio.usuario = usuario
             negocio.save()
-            messages.success(request, f"Negocio {negocio.nombre} asignado a {usuario.nombre}.")
+            messages.success(request, f"Negocio {negocio.nombre} ha sido asignado a {usuario.nombre}.")
             return redirect('usuarios:usuario_negocio')
     else:
         form = AsignarNegocioForm()
@@ -178,3 +210,72 @@ def desasignar_negocio(request, negocio_id):
 
     messages.info(request, f"Negocio {negocio.nombre} ha sido desasignado del usuario {usuario_nombre}.")
     return redirect('usuarios:usuario_negocio')
+
+
+def mantenimiento_usuario(request):
+
+    if request.method == 'POST':
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        tipo = request.POST.get('tipo')
+        item_id = request.POST.get('item_id')
+        nombre = request.POST.get('nombre', '').strip()
+
+        if not nombre:
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': 'El nombre es requerido'}, status=400)
+            messages.error(request, 'El nombre es requerido')
+            return redirect('usuarios:mantenimiento_usuarios')
+        
+        if re.search(r'\d', nombre):
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': 'El nombre no puede contener numeros'}, status=400)
+            messages.error(request, 'El nombre no puede contener numeros')
+            return redirect('usuarios:mantenimiento_usuarios')
+        
+        try:
+            if tipo == 'estado':
+                estado = get_object_or_404(EstadoUsuario, idEstadoUsuario=item_id)
+                estado.nombre = nombre
+                estado.save()
+                mensaje = f"Estado '{nombre}' ha sido actualizado exitosamente"
+
+                if is_ajax:
+                    return JsonResponse({
+                        'success': True,
+                        'message': mensaje,
+                        'data': {
+                            'id': estado.idEstadoUsuario,
+                            'nombre': estado.nombre
+                        }
+                    })
+                messages.success(request, mensaje)
+
+        except Exception as e:
+            error_msg = f"Error al actualizar {str(e)}"
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'error': error_msg
+                }, status=500)
+            messages.error(request, error_msg)
+        return redirect('usuarios:mantenimiento_usuarios')
+
+    estados = EstadoUsuario.objects.all().order_by('idEstadoUsuario')
+    
+    return render(request, 'usuarios/mantenimiento_usuarios.html', {'estados': estados})
+
+@require_http_methods(["POST"])
+def eliminar_elemento_usuario(request):
+    item_id = request.POST.get('item_id')
+    tipo = request.POST.get('tipo')
+
+    try:
+        if tipo == 'estado':
+            estado = get_object_or_404(EstadoUsuario, idEstadoUsuario=item_id)
+            nombre = estado.nombre
+            estado.delete()
+            messages.success(request, f"Estado '{nombre}' fue eliminado satisfactoriamente")
+    except Exception as e:
+        messages.error(request, f'Error al eliminar el elemento: {str(e)}')
+    return redirect('usuarios:mantenimiento_usuarios')

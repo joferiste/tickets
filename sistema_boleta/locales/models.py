@@ -39,7 +39,7 @@ class Local(models.Model):
     nombre = models.CharField(max_length=60)
     posicionMapa = models.PositiveSmallIntegerField(null=True, blank=True, unique=True, help_text="Número de posición en el mapa visual (1 a 8)")
     fechaCreacion = models.DateTimeField(auto_now_add=True)
-    nivel = models.ForeignKey(Nivel, on_delete=models.CASCADE)
+    nivel = models.ForeignKey(Nivel, on_delete=models.PROTECT)
     estado = models.ForeignKey(EstadoLocal, on_delete=models.PROTECT)
 
     def __str__(self):
@@ -70,9 +70,9 @@ class OcupacionLocal(models.Model):
 
     def __str__(self):
         return f"{self.local.nombre} - {self.negocio.nombre} ({self.fecha_inicio} a {self.fecha_fin or 'Actual'})"
-    
+     
     class Meta:
-        constraints = [
+        constraints = [ 
             UniqueConstraint(
                 fields=['local', 'negocio'],
                 condition=Q(fecha_fin__isnull=True),

@@ -80,7 +80,7 @@
         
         <div class="timeline">
             {% for registro in page_obj %}
-            <div class="timeline-item {{ registro.accion|lower }}">
+            <div class="timeline-item {{ registro.accion }}">
                 <div class="timeline-marker">
                     <span class="timeline-icon">
                         {% if registro.accion == 'CREACION' %}➕

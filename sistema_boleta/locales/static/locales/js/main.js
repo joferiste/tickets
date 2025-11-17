@@ -293,6 +293,29 @@ document.addEventListener("DOMContentLoaded", function(){
             setTimeout(() =>  alert.remove(), 600); 
             }, 4000);
         });
+
+        // Modal de informacion
+    const infoModal = document.getElementById("infoModal");
+    const closeInfoBtn = document.getElementById("closeInfoModal")
+
+    window.openInfoModal = function () {
+        infoModal.style.display = "block";
+    };
+
+    window.closeInfoModal = function () {
+        infoModal.style.display = "none";
+    };
+
+    closeInfoBtn?.addEventListener("click", () => {
+        infoModal.style.display = "none";
+    })
+
+    // Cierra el modal si hacen clic fuera del contenido
+    window.addEventListener("click", function (event) {
+        if (event.target === infoModal) {
+            infoModal.style.display = "none";
+        }
+    });
  
 })
 

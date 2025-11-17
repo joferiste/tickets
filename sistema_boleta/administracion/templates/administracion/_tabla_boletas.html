@@ -1,20 +1,28 @@
 <!-- _tabla_boletas.html -->
 {% for boleta in boletas %}
-<tr class="inbox-row {% if not boleta.leido %}unread{% endif %} {% if boleta.estado_validacion == 'procesada' %}processed{% endif %}">
+<tr data-estado="{% if not boleta.leido %}nuevo{% else%}{{ boleta.estado_validacion }}{% endif %}">
     <td class="col-status">
         <div class="status-indicator">
-            {% if boleta.estado_validacion == "sin_imagen" %}
-                <span class="status-dot error"></span>
-                <span class="status-text">Sin Imagen</span>
-            {% elif boleta.estado_validacion == "rechazada" %}
+            {% if boleta.estado_validacion == "rechazada" %}
+                {% if boleta.motivo_rechazo and "remitente no reconocido" in boleta.motivo_rechazo %}
+                <span class="status-dot rejected"></span>
+                <span class="status-text">Email no reconocido</span>
+            {% else %}
                 <span class="status-dot rejected"></span>
                 <span class="status-text">Rechazada</span>
-            {% elif not boleta.leido %}
-                <span class="status-dot unread"></span>
-                <span class="status-text">Nuevo</span>
+            {% endif %} 
+            {% elif boleta.estado_validacion == "sin_imagen" %}
+                <span class="status-dot error"></span> 
+                <span class="status-text">Sin Imagen</span>
+            {% elif boleta.estado_validacion == 'duplicada' %}
+                <span class="status-dot warning"></span>
+                <span class="status-text">Posible duplicado</span>
             {% elif boleta.estado_validacion == "procesada" %}
                 <span class="status-dot processed"></span>
                 <span class="status-text">Procesada</span>
+            {% elif not boleta.leido %}
+                <span class="status-dot unread"></span>
+                <span class="status-text"> Nuevo</span>
             {% else %}
                 <span class="status-dot pending"></span>
                 <span class="status-text">Pendiente</span>
@@ -50,7 +58,7 @@
         <div class="business-info">
             {% if boleta.metadata.negocio %}
                 <div class="business-detected">
-                    <span class="business-name-text">{{ boleta.metadata.negocio|truncatechars:20 }}</span>
+                    <span class="business-name-text">{{ boleta.metadata.negocio|truncatechars:30 }}</span>
                 </div>
             {% else %}
                 <div class="business-not-detected">
@@ -71,6 +79,21 @@
                 <a href="{% url 'administracion:boleta_detalle' boleta.id %}" class="btn-action btn-view">
                     <span class="action-text">Ver</span>
                 </a>
+                {% if boleta.estado_validacion == 'rechazada' or boleta.estado_validacion == 'sin_imagen' %}
+                    <button
+                        type="button" 
+                        class="btn-action btn-delete" 
+                        onclick="abrirModalEliminar(
+                        '{{ boleta.id }}',
+                        '{{ boleta.remitente|escapejs }}',
+                        '{{ boleta.estado_validacion }}',
+                        '{{ boleta.fecha_recepcion|date:"d/m/Y H:i" }}',
+                        '{{ boleta.motivo_rechazo|default:""|escapejs }}'
+                        )" >
+
+                        <span class="action-text">Eliminar</span>
+                    </button>
+                {% endif %}
             {% endif %}
         </div>
     </td>
@@ -86,4 +109,3 @@
     </td>
 </tr>
 {% endfor %}
-</script>

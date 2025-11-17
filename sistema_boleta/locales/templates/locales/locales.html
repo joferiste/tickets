@@ -10,16 +10,13 @@
 <link rel="stylesheet" href="{% static 'locales/css/estilos_locales.css' %}">
 <script src="{% static 'locales/js/main.js' %}"> </script>
 
+<button class="info-button" onclick="openInfoModal()">Info importante para la creación de estados</button>
 <div class="main-content">
+     
     <div class="main-local">
+
         <h3 class="form-description"> Formulario para la creación de nuevos locales </h3>   
-        {% if messages %}
-            <div class="message-container">
-                {% for message in messages %}
-                    <div class="alert {{ message.tags }}"> {{ message }} </div>
-                {% endfor %}
-            </div>
-        {% endif %}
+        
         {% if bloqueado %}
             <div class="message-container">
                 <div class="alert-static"> ⚠️ No se pueden crear más locales. El límite máximo de 8 ha sido alcanzado. </div>
@@ -121,5 +118,25 @@
         </form>
     </div>    
 </div>
+
+<!--Boton fuera del contenedor-->
+<a href="{% url 'locales:mantenimiento_locales' %}" class="maintenance-button-fixed">
+    Mantenimiento de elementos de local
+</a>
+
+<!-- Modal de informacion -->
+        <div id="infoModal" class="info-modal">
+            <div class="info-modal-content">
+                <span class="close" onclick="closeInfoModal()">&times;</span>
+                <h2>Creación de estado de locales</h2>
+                        <strong><h3>Importancia de creación de los estados según reglas </h3></strong>
+                        <p>Esta fase contempla abiertamente la creación de estados de locales, pero para que el sistema sea funcional
+                            al 100%, únicamente necesita crear dos: Disponible y Ocupado. con inicial mayúscula. </p>
+                            <br>
+                        <strong>Disponible<br>
+                                Ocupado
+                        </strong>
+            </div>
+        </div>
 
 {% endblock %}

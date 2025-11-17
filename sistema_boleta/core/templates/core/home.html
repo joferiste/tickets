@@ -14,27 +14,27 @@
             {% for i in "12345678" %}
                 {% with local=locales|get_local:i %}
                     {% if local %}
-                        {# Saca el <a> fuera del with de ocupacion #}
-                        <a href="{% url 'locales:perfil_local' local.idLocal %}" 
-                        class="local local-{{ i }} {{ local.estado.nombre|lower }}">
+                        {% with ocupacion=ocupaciones|get_ocupacion:local.idLocal %}
+                            <a href="{% url 'locales:perfil_local' local.idLocal %}" 
+                                class="local local-{{ i }} {{ local.estado.nombre|lower }}"
+                                {% if ocupacion %} data-negocio="{{ ocupacion.negocio.nombre }}" {% endif %}>
                             
-                            <span class="badge-position">{{ i }}</span>
-                            {{ local.nombre }}
+                                <span class="badge-position">{{ i }}</span>
+                                {{ local.nombre }}
                             
-                            <div class="tooltip">
-                                <h3>{{ local.nombre|default:"Local sin nombre" }}</h3>
+                                <div class="tooltip">
+                                    <h3>{{ local.nombre|default:"Local sin nombre" }}</h3>
+                                    
                                 
-                                {% with ocupacion=ocupaciones|get_ocupacion:local.idLocal %}
                                     {% if ocupacion %}
                                         <strong>Negocio:</strong> {{ ocupacion.negocio.nombre }}<br>
                                         <strong>Inicio:</strong> {{ ocupacion.fecha_inicio|date:"d/m/Y" }}<br>
-
                                     {% endif %}
-                                {% endwith %}
                                 
-                                <strong>Estado: </strong>{{ local.estado }}
-                            </div>
-                        </a>
+                                    <strong>Estado: </strong>{{ local.estado }}
+                                </div>
+                            </a>
+                        {% endwith %}
                     {% else %}
                         {# Local no existe en la BD #}
                         <div class="local local-{{ i }} disponible">

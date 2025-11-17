@@ -1,0 +1,146 @@
+{% extends 'core/base.html' %}
+
+{% load static %}
+
+{% block title %}Mantenimiento de estados de usuarios{% endblock %}
+
+{% block page_title %}Mantenimiento de estados de usuario{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'usuarios/css/mantenimientos.css' %}">
+<script src="{% static 'usuarios/js/mantenimientos.js' %}"></script>
+
+<div class="mantenimiento-container">
+    <div class="mantenimiento-header">
+        <h2>Mantenimiento de elementos de estado de usuario</h2>
+    </div>
+    
+    <!-- Pestañas -->
+    <div class="tabs-container">
+        <button class="tab-button active" data-tab="estados">
+            <span class="tab-icon">📊</span>
+            Estados de usuario
+        </button>
+    </div>
+
+    <!-- Contenido Tab Estados -->
+    <div id="tab-estados" class="tab-content active">
+        <div class="tabla-wrapper">
+            <table class="tabla-mantenimiento">
+                <thead>
+                    <tr>
+                        <th width="10%">ID</th>
+                        <th width="50%">Nombre</th>
+                        <th width="40%">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for estado in estados %}
+                    <tr data-id="{{ estado.idEstadoUsuario }}" data-nombre="{{ estado.nombre }}" data-tipo="estado">
+                        <td class="id-column">{{ estado.idEstadoUsuario }}</td>
+                        <td class="nombre-column">{{ estado.nombre }}</td>
+                        <td class="acciones-column">
+                            <button class="btn-accion btn-editar" onclick="abrirModalEditar(this, 'estado')" title="Editar">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M11.333 2.00004C11.5081 1.82494 11.716 1.68605 11.9447 1.59129C12.1735 1.49653 12.4187 1.44775 12.6663 1.44775C12.914 1.44775 13.1592 1.49653 13.3879 1.59129C13.6167 1.68605 13.8246 1.82494 13.9997 2.00004C14.1748 2.17513 14.3137 2.383 14.4084 2.61178C14.5032 2.84055 14.552 3.08575 14.552 3.33337C14.552 3.58099 14.5032 3.82619 14.4084 4.05497C14.3137 4.28374 14.1748 4.49161 13.9997 4.66671L4.99967 13.6667L1.33301 14.6667L2.33301 11L11.333 2.00004Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Editar
+                            </button>
+                            <button class="btn-accion btn-eliminar" onclick="abrirModalEliminar(this, 'estado')" title="Eliminar">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M2 4H3.33333H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M5.33301 4.00004V2.66671C5.33301 2.31309 5.47348 1.97395 5.72353 1.7239C5.97358 1.47385 6.31272 1.33337 6.66634 1.33337H9.33301C9.68663 1.33337 10.0258 1.47385 10.2758 1.7239C10.5259 1.97395 10.6663 2.31309 10.6663 2.66671V4.00004M12.6663 4.00004V13.3334C12.6663 13.687 12.5259 14.0261 12.2758 14.2762C12.0258 14.5262 11.6866 14.6667 11.333 14.6667H4.66634C4.31272 14.6667 3.97358 14.5262 3.72353 14.2762C3.47348 14.0261 3.33301 13.687 3.33301 13.3334V4.00004H12.6663Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="empty-state">
+                            <div class="empty-icon">📋</div>
+                            <p>No hay estados registrados</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Edición -->
+<div id="modal-editar" class="modal">
+    <div class="modal-overlay" onclick="cerrarModal('editar')"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="titulo-editar">Editar Elemento</h3>
+            <button class="modal-close" onclick="cerrarModal('editar')">&times;</button>
+        </div>
+        <form id="form-editar" method="POST" action="{% url 'usuarios:mantenimiento_usuarios' %}">
+            {% csrf_token %}
+            <input type="hidden" id="item-id" name="item_id">
+            <input type="hidden" id="tipo-editar" name="tipo">
+            
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="nombre-editar">Nombre <span class="required">*</span></label>
+                    <input type="text" id="nombre-editar" name="nombre" class="form-control" placeholder="Ingrese el nombre" required>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn-secundario" onclick="cerrarModal('editar')">Cancelar</button>
+                <button type="submit" class="btn-primario">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M13.3337 4L6.00033 11.3333L2.66699 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Eliminación -->
+<div id="modal-eliminar" class="modal">
+    <div class="modal-overlay" onclick="cerrarModal('eliminar')"></div>
+    <div class="modal-content modal-eliminar">
+        <div class="modal-header">
+            <div class="icono-advertencia">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                    <path d="M24 16V24M24 32H24.02M10.9 40H37.1C39.6 40 41.2 37.2 40 35L26.9 11C25.7 8.8 22.3 8.8 21.1 11L8 35C6.8 37.2 8.4 40 10.9 40Z" stroke="#dc3545" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <button class="modal-close" onclick="cerrarModal('eliminar')">&times;</button>
+        </div>
+        <form id="form-eliminar" method="POST" action="{% url 'usuarios:eliminar_elemento_usuario' %}">
+            {% csrf_token %}
+            <input type="hidden" id="eliminar-item-id" name="item_id">
+            <input type="hidden" id="tipo-eliminar" name="tipo">
+            
+            <div class="modal-body">
+                <h3>¿Estás seguro?</h3>
+                <div class="mensaje-confirmacion">
+                    <p>Estás a punto de eliminar el siguiente elemento:</p>
+                    <div class="elemento-eliminar">
+                        <strong id="eliminar-item-nombre"></strong>
+                    </div>
+                    <p class="advertencia-texto">Esta acción no se puede deshacer.</p>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn-secundario" onclick="cerrarModal('eliminar')">Cancelar</button>
+                <button type="submit" class="btn-peligro">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M2 4H3.33333H14M5.33333 4V2.66667C5.33333 2.31304 5.47381 1.97391 5.72386 1.72386C5.97391 1.47381 6.31304 1.33333 6.66667 1.33333H9.33333C9.68696 1.33333 10.0261 1.47381 10.2761 1.72386C10.5262 1.97391 10.6667 2.31304 10.6667 2.66667V4M12.6667 4V13.3333C12.6667 13.687 12.5262 14.0261 12.2761 14.2761C12.0261 14.5262 11.687 14.6667 11.3333 14.6667H4.66667C4.31304 14.6667 3.97391 14.5262 3.72386 14.2761C3.47381 14.0261 3.33333 13.687 3.33333 13.3333V4H12.6667Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Eliminar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

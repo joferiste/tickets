@@ -13,16 +13,9 @@
     <h1>Asignación de negocios a locales</h1>
     <h2> Asignaciones activas </h2>
 
-    <!-- Mensajes -->
-    {% if messages %}
-        {% for message in messages %}
-            <div class="mensaje {{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-
     <!-- Botón para abrir modal -->
     <button class="btn" id="abrirModal">+ Asignar Local</button>
-
+ 
     <!-- Tabla de asignaciones -->
     <table class="tabla-asignaciones">
         <thead>

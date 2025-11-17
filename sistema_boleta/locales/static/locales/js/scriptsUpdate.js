@@ -1,215 +1,256 @@
-    function openEditModalLocal(idLocal) {
-        fetch(`/locales/editar_local/${idLocal}/`)
-            .then(response => {
-                if (!response.ok) throw new Error("Error en la respuesta del servidor");
-                return response.json();
-            })
-            .then(data => {
-                const modal = document.getElementById("modal");
-                const modalContent = document.getElementById("modal-content");
+function mostrarMensajeFlash(mensaje, tipo = 'success') {
+        // Remover mensajes anteriores si existen
+        const mensajeAnterior = document.querySelector('.mensaje-dinamico');
+        if (mensajeAnterior) {
+            mensajeAnterior.remove();
+        }
 
-                modalContent.innerHTML = data.html;
-                modal.classList.remove("hidden");
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                alert("Ocurrió un error al abrir el formulario de edición");
-            });
+        // Crear el contenedor de mensajes si no existe
+        let flashContainer = document.querySelector('.flash-container');
+        if (!flashContainer) {
+            flashContainer = document.createElement('div');
+            flashContainer.className = 'flash-container';
+            document.body.appendChild(flashContainer);
+        }
+
+        // Crear el mensaje con el mismo formato que los mensajes Django
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${tipo} mensaje-dinamico`;
+        alertDiv.innerHTML = `
+            ${mensaje}
+            <button class="alert-close" type="button" aria-label="Cerrar">&times;</button>
+        `;
+
+        flashContainer.appendChild(alertDiv);
+
+        // Evento para cerrar manualmente
+        const closeBtn = alertDiv.querySelector('.alert-close');
+        closeBtn.addEventListener('click', () => {
+            cerrarMensaje(alertDiv);
+        });
+
+        // Auto-cerrar después de 5 segundos
+        setTimeout(() => {
+            cerrarMensaje(alertDiv);
+        }, 5000);
     }
 
-    // Delegación del evento submit para formularios dinámicos
-    document.addEventListener("submit", function (e) {
-        console.log("Submit detectado en elemento ", e.target.tagName, "con ID", e.target.id);
-
-        if (e.target.matches("#formEditarLocales")) {
-            console.log("🟢 Formulario de edicion detectado");
-            e.preventDefault();
-            e.stopPropagation();
-
-            const form = e.target;
-            const formData = new FormData(form);
-
-            console.log("formData creado: ", [...formData.entries()])
-
-            // Validacion del frontend antes de entrar al backend
-            if (!validarCamposFormulario()) {
-            console.log("❌ Validación de campos fallida.");
-            return; // Evita el envío si hay errores
+    // Función para cerrar mensaje con animación
+    function cerrarMensaje(alertDiv) {
+        if (!alertDiv || alertDiv.classList.contains('alert-closing')) {
+            return;
         }
 
-            if (!formData.get('id')){
-                console.error("id del local no encontrado en el formulario");
-                alert("Error: id de local no encontrado");
-                return;
-            }
-
-            console.log("Iniciando peticion AJAX...");
-
-            fetch("/locales/actualizar_local/", {
-                method: "POST",
-                headers: {
-                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-                },
-                body: formData
-            })
-            .then(response => {
-                console.log("Respuesta recibida:", response.status);
-                if (!response.ok) {
-                    throw new Error (`HTTP error! status: ${response.status}`)
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log("Respuesta del servidor:", data)
-                if (data.success) {
-                    openDeleteModalLocal("modal");
-                    showAlert("✅ Local actualizado correctamente", "success");
-
-                    const fila = document.getElementById(`local-${data.local.id}`);
-                    if (fila) {
-                        fila.querySelector(".nombre").textContent = data.local.nombre;
-                        fila.querySelector(".estado").textContent = data.local.estado;
-                        fila.querySelector(".nivel").textContent = data.local.nivel;
-                    }
-                } else {
-                    // Reemplaza el contenido del modal con errores (mantiene funcionalidad del nuevo form)
-                    document.getElementById("modal-content").innerHTML = data.html;
-                }
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                showAlert("Ocurrió un error al actualizar el local", "error");
-            });
-        }
-    });
-
-    function showAlert(message, type = "success") {
-        const alertBox = document.getElementById("alert-container");
- 
-        alertBox.className = `alert-container ${type} show`;
-        alertBox.textContent = message;
+        alertDiv.classList.add('alert-closing');
 
         setTimeout(() => {
-            alertBox.classList.remove("show");
-        }, 4500);
+            alertDiv.remove();
+            
+            // Si no quedan más alertas, remover el contenedor
+            const flashContainer = document.querySelector('.flash-container');
+            if (flashContainer && flashContainer.children.length === 0) {
+                flashContainer.remove();
+            }
+        }, 600);
     }
 
-    function validarCamposFormulario() {
-    let valido = true;
+// ============== Funciones de Modal ==============
+function openEditModalLocal(idLocal) {
+    fetch(`/locales/editar_local/${idLocal}/`)
+        .then(response => {
+            if (!response.ok) throw new Error("Error en la respuesta del servidor");
+            return response.json();
+        })
+        .then(data => {
+            const modal = document.getElementById("modal");
+            const modalContent = document.getElementById("modal-content");
+            modalContent.innerHTML = data.html;
+            modal.removeAttribute('aria-hidden');
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            mostrarMensajeFlash("❌ Ocurrió un error al abrir el formulario", "error");
+        });
+}
 
-    const campos = [
-        {
-            id: "id_nombre",
-            tipo: "texto",
-            mensaje: "El nombre sólo debe contener letras y no debe quedar vacío."
-        },
-        {
-            id: "id_nivel",
-            tipo: "select",
-            mensaje: "Debe seleccionar un nivel válido."
-        },
-        {
-            id: "id_estado",
-            tipo: "select",
-            mensaje: "Debe seleccionar un estado válido."
+function openDeleteModalLocal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.setAttribute('aria-hidden', 'true');
+        document.getElementById("modal-content").innerHTML = "";
+    }
+}
+
+function openDeleteModal(id, nombre) {
+    document.getElementById('delete_id').value = id;
+    document.getElementById('delete_text').textContent = `¿Estás seguro de querer eliminar el local "${nombre}"?`;
+    const modal = document.getElementById('deleteModal');
+    modal.removeAttribute('aria-hidden');
+}
+
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.setAttribute('aria-hidden', 'true');
+}
+
+// ============== Formulario de Actualización ==============
+document.addEventListener("submit", function (e) {
+    if (e.target.matches("#formEditarLocales")) {
+        console.log("🟢 Formulario de edición detectado");
+        e.preventDefault();
+        e.stopPropagation();
+
+        const form = e.target;
+        const formData = new FormData(form);
+
+        if (!validarCamposFormulario()) {
+            console.log("❌ Validación fallida");
+            return;
         }
+
+        if (!formData.get('id')) {
+            mostrarMensajeFlash("❌ Error: ID del local no encontrado", "error");
+            return;
+        }
+
+        const btnSubmit = form.querySelector('button[type="submit"]');
+        const textoOriginal = btnSubmit ? btnSubmit.textContent : '';
+        if (btnSubmit) {
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = 'Guardando...';
+        }
+
+        fetch("/locales/actualizar_local/", {
+            method: "POST",
+            headers: {'X-CSRFToken': formData.get('csrfmiddlewaretoken')},
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                mostrarMensajeFlash(data.message, data.message_type || "success");
+            }
+
+            if (data.success) {
+                openDeleteModalLocal("modal");
+
+                const fila = document.getElementById(`local-${data.local.id}`);
+                if (fila) {
+                    // Actualizar nombre y avatar
+                    const localNombre = fila.querySelector(".local-nombre");
+                    if (localNombre) localNombre.textContent = data.local.nombre;
+
+                    const localAvatar = fila.querySelector(".local-avatar");
+                    if (localAvatar) localAvatar.textContent = data.local.nombre.charAt(0).toUpperCase();
+
+                    // Actualizar nivel
+                    const nivelCell = fila.querySelector("td.nivel");
+                    if (nivelCell) nivelCell.textContent = data.local.nivel;
+
+                    // Actualizar estado badge
+                    const estadoBadge = fila.querySelector(".badge-disponible, .badge-ocupado");
+                    if (estadoBadge) {
+                        estadoBadge.className = `badge badge-${data.local.estado.toLowerCase()}`;
+                        estadoBadge.textContent = data.local.estado;
+                    }
+
+                    fila.style.animation = 'none';
+                    setTimeout(() => fila.style.animation = 'fadeIn 0.5s ease', 10);
+                }
+            } else if (data.html) {
+                document.getElementById("modal-content").innerHTML = data.html;
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            mostrarMensajeFlash("❌ Ocurrió un error al actualizar", "error");
+        })
+        .finally(() => {
+            if (btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = textoOriginal;
+            }
+        });
+    }
+});
+
+// ============== Validación ==============
+function validarCamposFormulario() {
+    let valido = true;
+    const campos = [
+        {id: "id_nombre", tipo: "texto", mensaje: "El nombre sólo debe contener letras."},
+        {id: "id_nivel", tipo: "select", mensaje: "Seleccione un nivel válido."},
+        {id: "id_estado", tipo: "select", mensaje: "Seleccione un estado válido."}
     ];
 
     campos.forEach(({ id, tipo, mensaje }) => {
         const campo = document.getElementById(id);
         const errorDiv = document.getElementById(`error-${id}`);
-
         if (!campo || !errorDiv) return;
 
         let error = false;
 
-        if (tipo === "texto") {
-            const regex = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/;
-            if (!regex.test(campo.value.trim())) error = true;
-        }
-
-        if (tipo === "select") {
-            if (!campo.value || campo.value.trim() === "") error = true;
-        }
+        if (tipo === "texto" && !/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(campo.value.trim())) error = true;
+        if (tipo === "select" && (!campo.value || campo.value.trim() === "")) error = true;
 
         if (error) {
             campo.classList.add("input-error");
             errorDiv.textContent = mensaje;
             errorDiv.style.display = "block";
-            setTimeout(() => {
-                errorDiv.style.display = "none";
-            }, 4000);
+            setTimeout(() => errorDiv.style.display = "none", 4000);
             valido = false;
         } else {
+            campo.classList.remove("input-error");
             errorDiv.textContent = "";
             errorDiv.style.display = "none";
         }
     });
 
     return valido;
-    }
+}
 
-    function openDeleteModalLocal(id) {
-        document.getElementById(id).classList.add("hidden");
-        document.getElementById("modal-content").innerHTML = "";
-    }
-
-    function openDeleteModal(id, nombre){
-        document.getElementById('delete_id').value = id;
-        document.getElementById('delete_text').textContent = `¿Estás seguro de querer eliminar el Local: "${nombre}"?`;
-        document.getElementById('deleteModal').classList.remove('hidden');
-    };
-
-    function closeModal(id){
-        document.getElementById(id).classList.add('hidden');
-    };
-
-    
-    document.addEventListener("DOMContentLoaded", () => {
+// ============== Eliminación ==============
+document.addEventListener("DOMContentLoaded", () => {
     const deleteForm = document.querySelector("#deleteModal form");
-    const modalDelete = document.getElementById('deleteModal')
-    const modal = document.getElementById('modal');
+    
+    if (deleteForm) {
+        deleteForm.addEventListener("submit", function (e) {
+            e.preventDefault();
+            const formData = new FormData(deleteForm);
 
-    window.addEventListener('click', function (event) {
-        if (event.target === modalDelete) {
-            modalDelete.classList.add('hidden');
-        }
-    });
-
-    window.onclick = function (event) {
-        if (event.target === modal) {
-            modal.classList.add('hidden');
-        }
-    };
-
-    deleteForm.addEventListener("submit", function (e) {
-        e.preventDefault();
-        
-        const formData = new FormData(deleteForm);
-
-        fetch(deleteForm.action, {
-            method: "POST",
-            headers: {
-                "X-CSRFToken": formData.get("csrfmiddlewaretoken")
-            },
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                const fila = document.getElementById(`local-${data.local_id}`);
-                if (fila) fila.remove();
-                
-                closeModal("deleteModal");
-                showAlert("✅ Local eliminado correctamente", "success");
-            } else {
-                closeModal("deleteModal");
-                showAlert(data.error || "❌ No se pudo eliminar el Local", "error");
-            }
-        })
-        .catch(err => {
-            console.error("Error al eliminar:", err);
-            showAlert("❌ Error inesperado al intentar eliminar", "error");
+            fetch(deleteForm.action, {
+                method: "POST",
+                headers: {"X-CSRFToken": formData.get("csrfmiddlewaretoken")},
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const fila = document.getElementById(`local-${data.local_id}`);
+                    if (fila) {
+                        fila.style.animation = 'fadeOut 0.5s ease';
+                        setTimeout(() => fila.remove(), 500);
+                    }
+                    closeModal("deleteModal");
+                    mostrarMensajeFlash("✅ Local eliminado correctamente", "success");
+                } else {
+                    closeModal("deleteModal");
+                    mostrarMensajeFlash(data.error || "❌ No se pudo eliminar", "error");
+                }
+            })
+            .catch(err => {
+                console.error("Error:", err);
+                mostrarMensajeFlash("❌ Error al eliminar", "error");
+            });
         });
-    });
+    }
 });
+
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeOut {
+        from { opacity: 1; transform: scale(1); }
+        to { opacity: 0; transform: scale(0.95); }
+    }
+`;
+document.head.appendChild(style);

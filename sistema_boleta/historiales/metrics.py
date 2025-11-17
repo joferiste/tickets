@@ -12,13 +12,13 @@ def actualizar_metricas_negocio(negocio):
 
     transacciones = Transaccion.objects.filter(
         negocio=negocio,
-        estado='exitosa'
+        estado__in=['exitosa', 'espera_acreditacion']
     ).select_related('boleta', 'boleta__tipoPago').order_by('fechaTransaccion')
 
     # DEBUG: Ver qué transacciones encuentra
     print(f"\n{'='*50}")
     print(f"NEGOCIO: {negocio.nombre}")
-    print(f"Transacciones exitosas encontradas: {transacciones.count()}")
+    print(f"Transacciones exitosas y con espera_acreditacion encontradas: {transacciones.count()}")
     for t in transacciones:
         print(f"  - ID: {t.idTransaccion}, Monto: {t.monto}, Estado: {t.estado}")
     print(f"{'='*50}\n")
@@ -157,7 +157,7 @@ def obtener_historial_completo(negocio):
 
     transacciones = Transaccion.objects.filter(
         negocio=negocio,
-        estado='exitosa'
+        estado__in=['exitosa', 'espera_acreditacion']
     ).select_related('boleta').order_by('-fechaTransaccion')
     
     historial_por_ano = defaultdict(list)
@@ -198,7 +198,7 @@ def obtener_historial_timeline(negocio):
 
     transacciones = Transaccion.objects.filter(
         negocio=negocio,
-        estado='exitosa'
+        estado__in=['exitosa', 'espera_acreditacion']
     ).select_related('boleta').order_by('-fechaTransaccion')
 
     timeline = defaultdict(list)

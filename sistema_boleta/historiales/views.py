@@ -45,7 +45,7 @@ def dashboard_metricas(request):
         # Calcular estadisticas adicionales para graficos
         transacciones = Transaccion.objects.filter(
             negocio=negocio_seleccionado,
-            estado='exitosa'
+            estado__in=['exitosa', 'espera_acreditacion']
         ).order_by('fechaTransaccion')
 
         # Datos para grafico de linea (ultimos 12 meses)
@@ -90,7 +90,7 @@ def dashboard_metricas(request):
 
     # Lista de negocios con transacciones exitosas
     negocios_ids = Transaccion.objects.filter(
-        estado='exitosa'
+        estado__in=['exitosa', 'espera_acreditacion']
     ).values_list('negocio_id', flat=True).distinct()
 
     print("=" * 50)
@@ -114,9 +114,7 @@ def dashboard_metricas(request):
         'perfil': perfil,
         'timeline': timeline,
         'estadisticas': estadisticas,
-    }
-    
-    
+    }    
     return render(request, 'historiales/dashboard_metricas.html', contexto)
 
 

@@ -15,8 +15,6 @@ from .utils import (
     formatear_porcentaje
 )
 
-
-
 @login_required(login_url='login')  
 def consolidado_ingresos(request):
     """
@@ -83,7 +81,7 @@ def consolidado_ingresos(request):
         {'num': 6, 'nombre': 'Junio'},
         {'num': 7, 'nombre': 'Julio'},
         {'num': 8, 'nombre': 'Agosto'},
-        {'num': 9, 'nombre': 'Septiembre'},
+        {'num': 9, 'nombre': 'Septiembre'}, 
         {'num': 10, 'nombre': 'Octubre'},
         {'num': 11, 'nombre': 'Noviembre'},
         {'num': 12, 'nombre': 'Diciembre'},

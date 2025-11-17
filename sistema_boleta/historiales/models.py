@@ -7,10 +7,10 @@ import uuid
 class HistorialBase(models.Model):
     fechaModificacion = models.DateTimeField(auto_now_add=True)
     descripcion = models.TextField()
-    accion = models.CharField(max_length=20, choices=[('CREACION', 'creación'), ('ACTUALIZACION', 'actualización'), ('ELIMINACION', 'eliminación'), ('CAMBIO', 'cambio'),])
-    tipoCambio = models.CharField(max_length=50)
-    estadoAnterior = models.CharField(max_length=30, null=True, blank=True)
-    estadoNuevo = models.CharField(max_length=30, null=True, blank=True)
+    accion = models.CharField(max_length=25, choices=[('CREACION', 'creación'), ('ACTUALIZACION', 'actualización'), ('ELIMINACION', 'eliminación'), ('CAMBIO', 'cambio'),])
+    tipoCambio = models.CharField(max_length=80)
+    estadoAnterior = models.CharField(max_length=70, null=True, blank=True)
+    estadoNuevo = models.CharField(max_length=70, null=True, blank=True)
 
     class Meta:
         abstract = True

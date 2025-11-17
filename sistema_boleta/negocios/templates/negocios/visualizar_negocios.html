@@ -6,95 +6,194 @@
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'negocios/css/design_update.css' %}">
-<script src="{% static 'negocios/js/scriptsUpdate.js' %}"> </script>
-<div id="alert-container" class="alert-container hidden"></div>
+<script src="{% static 'negocios/js/scriptsUpdate.js' %}"></script>
 
 <div class="main-content">
-        <div class="visualizacion_negocios">
-            <div class="retocar_titulo"> 
-                <h1 class="title-centre"> Visualización de Negocios </h1>
-                <!-- Formulario de busqueda -->
+    <div class="container-negocios">
+        <!-- Header con título y búsqueda -->
+        <div class="header-section">
+            <div class="header-left">
+                <h1 class="page-title-1">Gestión de negocios</h1>
+                <p class="page-subtitle">Administra y consulta los negocios del sistema</p>
+            </div>
+            <div class="header-right">
                 <form method="POST" class="form-busqueda">
                     {% csrf_token %}
-                    {{ form.q }}
-                    <button type="submit" class="btn-buscar"> Buscar </button>
+                    <div class="search-wrapper">
+                        {{ form.q }}
+                        <button type="submit" class="btn-buscar">
+                            <span class="icon">🔍</span>
+                            <span class="text">Buscar</span>
+                        </button>
+                    </div>
                 </form>
-            </div> 
-            <!-- Resultados -->
-            <div class="resultados">
-                {% if negocios %}
+            </div>
+        </div>
+
+        <!-- Tabla de resultados -->
+        <div class="tabla-wrapper">
+            {% if negocios %}
+                <!-- Información de paginación -->
+                <div class="pagination-info">
+                    <span class="info-text">
+                        Mostrando {{ negocios.start_index }} - {{ negocios.end_index }} de {{ total_negocios }} negocios
+                    </span>
+                </div>
+
+                <div class="tabla-container">
                     <table class="tabla-negocios">
                         <thead>
                             <tr>
-                                <th>Nombre</th>
-                                <th>Descripción</th>
-                                <th>Teléfono 1</th>
-                                <th>Teléfono 2</th>
-                                <th>Correo Electrónico</th>
-                                <th>NIT</th>
-                                <th>Estado</th>
+                                <th>Negocio</th>
                                 <th>Categoría</th>
-                                <th>Usuario</th>
-                                <th>Fecha de Ingreso al Sistema</th>
-                                <th>Acciones</th>
+                                <th>Propietario</th>
+                                <th>Contacto</th>
+                                <th>Estado</th>
+                                <th>Fecha Registro</th>
+                                <th class="th-acciones">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for negocio in negocios %}
-                            <tr id="negocio-{{ negocio.idNegocio }}">
-                                <td class="nombre"> {{ negocio.nombre }}</td>
-                                <td class="descripcion"> {{ negocio.descripcion }}</td>
-                                <td class="telefono1"> {{ negocio.telefono1 }}</td>
-                                <td class="telefono2"> {{ negocio.telefono2|default_if_none:"---" }}</td>
-                                <td class="email"> {{ negocio.email|default_if_none:"---" }}</td>
-                                <td class="nit"> {{ negocio.nit|default_if_none:"---" }}</td>
-                                <td class="estado"> {{ negocio.estado }}</td>
-                                <td class="categoria"> {{ negocio.categoria }}</td>
-                                <td class="usuario"> {{ negocio.usuario.nombre }}</td>
-                                <td class="fechaCreacion"> {{ negocio.fechaCreacion }}</td>   
-                                <td>
-                                    <button class="btns-actions" title="Editar" onclick="openEditModalNegocio({{ negocio.idNegocio }},  
-                                                                                                            '{{ negocio.nombre|escapejs }}', 
-                                                                                                            '{{ negocio.descripcion|escapejs }}', 
-                                                                                                            '{{ negocio.telefono1|escapejs }}', 
-                                                                                                            '{{ negocio.telefono2|escapejs }}', 
-                                                                                                            '{{ negocio.nit|escapejs }}', 
-                                                                                                            '{{ negocio.email|escapejs }}', 
-                                                                                                            '{{ negocio.categoria.idCategoria|escapejs }}', 
-                                                                                                            '{{ negocio.usuario.idUsuario|escapejs }}', 
-                                                                                                            {{ negocio.estado.idEstadoNegocio }})">✏️</button>
-                                    <button class="btns-actions" title="Eliminar" onclick="openDeleteModal({{ negocio.idNegocio }}, '{{ negocio.nombre }}')">🗑️</button>
+                            <tr id="negocio-{{ negocio.idNegocio }}" class="fila-negocio">
+                                <td class="nombre" data-label="Negocio">
+                                    <div class="negocio-info">
+                                        <div class="negocio-avatar">{{ negocio.nombre|first|upper }}</div>
+                                        <div class="negocio-detalles">
+                                            <span class="negocio-nombre">{{ negocio.nombre }}</span>
+                                            <span class="negocio-desc">
+                                                {% if negocio.descripcion %}
+                                                    <div class="italic">{{ negocio.descripcion|truncatewords:6 }}</div>
+                                                {% else %}
+                                                    <div class="italic">-- Sin descripción --</div>
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="categoria" data-label="Categoría">
+                                    <span class="badge badge-categoria">{{ negocio.categoria }}</span>
+                                </td>
+                                <td class="usuario" data-label="Propietario">
+                                    {{ negocio.usuario.nombre }}
+                                </td>
+                                <td class="contacto" data-label="Contacto">
+                                    <div class="contacto-info">
+                                        <span class="telefono1">📞 {{ negocio.telefono1 }}</span>
+                                        {% if negocio.email %}
+                                        <span class="email">✉️ {{ negocio.email }}</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="estado" data-label="Estado">
+                                    <span class="badge badge-{{ negocio.estado|lower }}">
+                                        {{ negocio.estado }}
+                                    </span>
+                                </td>
+                                <td class="fechaCreacion" data-label="Fecha">
+                                    {{ negocio.fechaCreacion|date:"d/m/Y" }}
+                                </td>
+                                <td class="acciones" data-label="Acciones">
+                                    <div class="btn-group">
+                                        <button class="btn-action btn-edit" 
+                                                title="Editar negocio" 
+                                                onclick="openEditModalNegocio({{ negocio.idNegocio }})">
+                                            <span class="icon">✏️</span>
+                                        </button>
+                                        <button class="btn-action btn-delete" 
+                                                title="Eliminar negocio" 
+                                                onclick="openDeleteModal({{ negocio.idNegocio }}, '{{ negocio.nombre }}')">
+                                            <span class="icon">🗑️</span>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
-                {% else %}
-                    <p> No se encontraron negocios </p>
-                {% endif %}
-            </div>
-        </div>
+                </div>
 
-    <div id="modal" class="modal hidden">
-        <div class="modal-content" id="modal-content">
-            <!-- Aqui se inyecta el form -->
+                <!-- Controles de paginación -->
+                {% if negocios.has_other_pages %}
+                <div class="pagination-controls">
+                    <div class="pagination-buttons">
+                        {% if negocios.has_previous %}
+                            <a href="?page=1{% if request.POST.q %}&q={{ request.POST.q }}{% endif %}" class="btn-page btn-page-first" title="Primera página">
+                                <span>«</span>
+                            </a>
+                            <a href="?page={{ negocios.previous_page_number }}{% if request.POST.q %}&q={{ request.POST.q }}{% endif %}" class="btn-page btn-page-prev" title="Página anterior">
+                                <span>‹</span>
+                            </a>
+                        {% else %}
+                            <span class="btn-page btn-page-disabled">«</span>
+                            <span class="btn-page btn-page-disabled">‹</span>
+                        {% endif %}
+
+                        <div class="page-numbers">
+                            {% for num in negocios.paginator.page_range %}
+                                {% if negocios.number == num %}
+                                    <span class="btn-page btn-page-current">{{ num }}</span>
+                                {% elif num > negocios.number|add:'-3' and num < negocios.number|add:'3' %}
+                                    <a href="?page={{ num }}{% if request.POST.q %}&q={{ request.POST.q }}{% endif %}" class="btn-page">{{ num }}</a>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+
+                        {% if negocios.has_next %}
+                            <a href="?page={{ negocios.next_page_number }}{% if request.POST.q %}&q={{ request.POST.q }}{% endif %}" class="btn-page btn-page-next" title="Página siguiente">
+                                <span>›</span>
+                            </a>
+                            <a href="?page={{ negocios.paginator.num_pages }}{% if request.POST.q %}&q={{ request.POST.q }}{% endif %}" class="btn-page btn-page-last" title="Última página">
+                                <span>»</span>
+                            </a>
+                        {% else %}
+                            <span class="btn-page btn-page-disabled">›</span>
+                            <span class="btn-page btn-page-disabled">»</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="pagination-summary">
+                        Página {{ negocios.number }} de {{ negocios.paginator.num_pages }}
+                    </div>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">🔍</div>
+                    <h3>No se encontraron negocios</h3>
+                    <p>Intenta ajustar los criterios de búsqueda</p>
+                </div>
+            {% endif %}
         </div>
     </div>
 
-    <!--  Modal Eliminar -->
-    <div id="deleteModal" class="modal hidden">
-        <div class="modal-content-delete">
+    <!-- Modal Editar -->
+    <div id="modal" class="modal" aria-hidden="true">
+        <div class="modal-backdrop" onclick="openDeleteModalNegocio('modal')"></div>
+        <div class="modal-content" id="modal-content"></div>
+    </div>
+
+    <!-- Modal Eliminar -->
+    <div id="deleteModal" class="modal" aria-hidden="true">
+        <div class="modal-backdrop" onclick="closeModal('deleteModal')"></div>
+        <div class="modal-content modal-eliminar">
+            <div class="modal-header">
+                <h3>⚠️ Confirmar Eliminación</h3>
+            </div>
             <form method="POST" action="{% url 'negocios:delete_negocio' %}">
                 {% csrf_token %}
                 <input type="hidden" name="id" id="delete_id">
-                <p id="delete_text"></p>
+                <p id="delete_text" class="delete-message"></p>
                 <div class="modal-actions">
-                    <button type="button" onclick="closeModal('deleteModal')" class="btn-animated "> Cancelar </button>
-                    <button type="submit" class="btn-animated cancel"> Eliminar </button>
+                    <button type="button" onclick="closeModal('deleteModal')" class="btn-modal btn-cancel">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn-modal btn-delete-confirm">
+                        Eliminar
+                    </button>
                 </div>
             </form>
         </div>
     </div>
-    
 </div>
 {% endblock %}

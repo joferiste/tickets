@@ -19,31 +19,7 @@
         <div class="page-title">{% block page_title %}Dashboard{% endblock %}</div>
         <div class="admin-info">
             <!-- Notificaciones -->
-            <div class="notifications">
-                <button class="notif-btn" type="button" aria-label="Notificaciones">
-                    <img src="{% static 'icons/bell.svg' %}" alt="Notificaciones" class="notif-icon">
-                    <span class="notif-count">5</span>
-                </button>
-            
-                <div class="notif-dropdown">
-                    <div class="notif-header">Notificaciones</div>
-                    <div class="notif-item">
-                        <strong>Nueva boleta recibida</strong>
-                        <span class="notif-time">Hace 5 min</span>
-                    </div>
-                    <div class="notif-item">
-                        <strong>Boleta pendiente de validación</strong>
-                        <span class="notif-time">Hace 15 min</span>
-                    </div>
-                    <div class="notif-item">
-                        <strong>Boleta aprobada exitosamente</strong>
-                        <span class="notif-time">Hace 1 hora</span>
-                    </div>
-                    <div class="notif-footer">
-                        <a href="#" class="notif-view-all">Ver todas</a>
-                    </div>
-                </div>
-            </div>
+ 
 
             <!-- Usuario -->
             <a href="{% url 'logout' %}" class="user-status">
@@ -56,7 +32,7 @@
 
     <!-- Mensajes Flash -->
     {% if messages %}
-        <div class="flash-container">
+        <div class="flash-container"> 
             {% for message in messages %}
                 <div class="alert alert-{{ message.tags }}">
                     {{ message }}

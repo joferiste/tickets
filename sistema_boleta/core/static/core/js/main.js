@@ -1,5 +1,6 @@
 // ============== Esperar a que cargue el DOM ==============
 document.addEventListener('DOMContentLoaded', function() {
+
     initNotifications();
     initSubmenuToggles();
     initFlashMessages();
@@ -115,53 +116,47 @@ function closeAllSubmenus() {
 
 // ============== Mensajes Flash ==============
 function initFlashMessages() {
-    const closeButtons = document.querySelectorAll('.alert-close');
-    
-    closeButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const alert = this.closest('.alert');
-            if (alert) {
-                alert.style.animation = 'slideOut 0.4s ease';
-                setTimeout(() => {
-                    alert.remove();
-                    // Si no quedan más alertas, remover el contenedor
-                    const flashContainer = document.querySelector('.flash-container');
-                    if (flashContainer && flashContainer.children.length === 0) {
-                        flashContainer.remove();
-                    }
-                }, 400);
+    const alerts = document.querySelectorAll('.alert');
+    const flashContainer = document.querySelector('.flash-container');
+
+    // Función para cerrar una alerta con animación
+    function cerrarAlerta(alert) {
+        if (!alert || alert.classList.contains('alert-closing')) {
+            return; // Evitar cerrar dos veces
+        }
+        
+        // Agregar clase de salida  
+        alert.classList.add('alert-closing');
+
+        setTimeout(() => {
+            alert.remove();
+            // Si no quedan más alertas, remover el contenedor
+            if (flashContainer && flashContainer.children.length === 0) {
+                flashContainer.remove();
             }
+        }, 600); // Debe coincidir 
+    }
+    
+    // Event listener para los botones de cerrar
+    const closeButtons = document.querySelectorAll('.alert-close');
+    closeButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const alert = this.closest('.alert');
+            cerrarAlerta(alert);
         });
     });
     
     // Auto-cerrar después de 5 segundos
-    const alerts = document.querySelectorAll('.alert');
+    
     alerts.forEach(alert => {
         setTimeout(() => {
-            const closeBtn = alert.querySelector('.alert-close');
-            if (closeBtn) {
-                closeBtn.click();
-            }
+            cerrarAlerta(alert);
         }, 5000);
     });
 }
 
-// Animación de salida para las alertas
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideOut {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-    }
-`;
-document.head.appendChild(style);
-
+document.addEventListener('DOMContentLoaded', initFlashMessages);
 // ============== Funciones de Utilidad ==============
 
 // Función para manejar responsive (móvil)

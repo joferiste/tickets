@@ -31,7 +31,6 @@ document.addEventListener("DOMContentLoaded", function() {
         form.reset();
     });
     
-
     form.addEventListener("submit", function(e) {
         e.preventDefault();
         const nombre = form.nombre.value;

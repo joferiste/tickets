@@ -20,7 +20,7 @@
             <label>Mora (%)</label>
             <select name="mora_porcentaje" required>
                 <option value="">-- Selecciona --</option>
-                {% for mora in mora_porcentaje_opciones %}
+                {% for mora in mora_porcentaje_opciones %} 
                     <option value="{{ mora }}"{% if config and config.mora_porcentaje == mora %}selected{% endif %}> {{ mora }}%</option>
                 {% endfor %}
             </select>
@@ -92,6 +92,6 @@
 <!--Boton fuera del contenedor-->
 <a href="{% url 'configuracion:mantenimientos' %}" class="maintenance-button-fixed">
     🛠️ Mantenimiento de configuración del sistema
-</a>
+</a> 
 
 {% endblock %}

@@ -12,20 +12,13 @@
 <div class="asignaciones-container">
     <h1>Asignación de usuarios a negocios</h1>
 
-    <!-- Mensajes -->
-    {% if messages %}
-        {% for message in messages %}
-            <div class="mensaje {{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-
     <!-- Botón para abrir modal -->
     <button class="btn" id="abrirModal">+ Asignar negocio</button>
 
     <!-- Tabla de asignaciones -->
     <table class="tabla-asignaciones">
         <thead>
-            <tr>
+            <tr> 
                 <th>Usuario</th>
                 <th>Negocio</th>
                 <th>Acción</th>

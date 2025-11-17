@@ -14,17 +14,9 @@
     <div class="main-usuario">
         <h3 class="form-description"> Formulario para la creación de nuevos usuarios </h3>
 
-        {% if messages %}
-            <div class="message-container">
-                {% for message in messages %}
-                    <div class="alert" {{ message.tags }}> {{ message }} </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-
         <div class="form-wrapper">
             <form method="POST" class="styled-form">
-                {% csrf_token %}
+                {% csrf_token %} 
                 {% for field in form %}
                     <div class="form-group">
                         <label for="{{ field.id_for_label }}">
@@ -66,7 +58,11 @@
             </div>
         </form>
     </div>
-
 </div>
+
+    <!--Boton fuera del contenedor-->
+<a href="{% url 'usuarios:mantenimiento_usuarios' %}" class="maintenance-button-fixed">
+    Mantenimiento de estados de usuario
+</a>
 
 {% endblock %}

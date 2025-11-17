@@ -43,7 +43,7 @@ class NegocioForm(forms.ModelForm):
         return nombre
 
     def clean_descripcion(self):
-        descripcion = self.cleaned_data['descripcion'].strip()
+        descripcion = self.cleaned_data['descripcion']
         if descripcion in [None, '']:
             return descripcion
         
