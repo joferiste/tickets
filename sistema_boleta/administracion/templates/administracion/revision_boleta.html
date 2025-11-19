@@ -179,61 +179,238 @@
     </div>
 </div>
 
-<!-- Modal -->
+<!-- Modal de Ingreso de Boleta Mejorado -->
 <div id="boletaModal" class="modal hidden">
     <div class="modal-inner"> 
-    <!-- Imagen y controles -->
+        <!-- Sección de Imagen y Controles -->
         <div class="modal-image">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <div class="image-wrapper">
-                <img id="modalImage" src="{{ boleta.imagen.url }}" alt="Boleta" />
+            <!-- Header con título y botón cerrar -->
+            <div class="modal-image-header">
+                <h3>Vista de Boleta</h3>
+                <button class="close-btn" onclick="closeModal()" title="Cerrar (ESC)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
             </div>
-            <div class="controls">
-                <button onclick="rotateLeft()">⟲ Rotar</button>
-                <button onclick="rotateRight()">⟳ Rotar</button>
-                <button onclick="zoomIn()"> + Acercar</button>
-                <button onclick="zoomOut()"> - Alejar</button>
-                <button onclick="resetImage()">↺ Restaurar</button>
+
+            <!-- Viewport de imagen con scroll -->
+            <div class="image-viewport" id="imageViewportForm">
+                <div class="image-container" id="imageContainerForm">
+                    <img id="modalImage" src="{{ boleta.imagen.url }}" alt="Boleta" draggable="false" />
+                </div>
+            </div>
+
+            <!-- Controles mejorados -->
+            <div class="controls-form">
+                <div class="controls-group-form">
+                    <button class="control-btn-form" onclick="rotateLeft()" title="Rotar izquierda">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 4v6h6M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                        </svg>
+                        <span>Rotar </span>
+                    </button>
+                    
+                    <button class="control-btn-form" onclick="rotateRight()" title="Rotar derecha">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 4v6h-6M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                        <span>Rotar </span>
+                    </button>
+                </div>
+
+                <div class="controls-group-form">
+                    <button class="control-btn-form" onclick="zoomOut()" title="Alejar">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            <line x1="8" y1="11" x2="14" y2="11"></line>
+                        </svg>
+                    </button>
+                    <span class="zoom-level-form" id="zoomLevelForm">100%</span>
+                    <button class="control-btn-form" onclick="zoomIn()" title="Acercar">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            <line x1="11" y1="8" x2="11" y2="14"></line>
+                            <line x1="8" y1="11" x2="14" y2="11"></line>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="controls-group-form">
+                    <button class="control-btn-form" onclick="fitToScreen()" title="Ajustar">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <polyline points="9 21 3 21 3 15"></polyline>
+                            <line x1="21" y1="3" x2="14" y2="10"></line>
+                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                        </svg>
+                        <span>Ajustar</span>
+                    </button>
+                    
+                    <button class="control-btn-form" onclick="resetImage()" title="Restaurar">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                            <path d="M21 3v5h-5"></path>
+                            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                            <path d="M3 21v-5h5"></path>
+                        </svg>
+                        <span>Reset</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Indicadores de ayuda -->
+            <div class="viewer-hints">
+                <div class="hint-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="2" width="6" height="20" rx="3"></rect>
+                        <path d="M12 6v4"></path>
+                    </svg>
+                    <span>Rueda: Zoom</span>
+                </div>
+                <div class="hint-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3"></path>
+                    </svg>
+                    <span>Arrastrar</span>
+                </div>
             </div>
         </div>
 
         <!-- Formulario -->
         <div class="modal-form">
-            <h2>Procesar Boleta</h2>
+            <div class="form-header">
+                <h2>Procesar Boleta</h2>
+                <div class="form-subtitle">Complete los datos del depósito</div>
+            </div>
+
             <form id="procesarBoletaForm" method="POST" action="{% url 'administracion:procesar_boleta' boleta.id %}">
                 {% csrf_token %}
-                {{ form.as_p}}
+                
+                <div class="form-group-modern">
+                    <label for="banco">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                            <line x1="1" y1="10" x2="23" y2="10"></line>
+                        </svg>
+                        Banco y número de cuenta
+                        <span class="required">*</span>
+                    </label>
+                    <select name="banco" id="banco" class="form-control-modern" required>
+                        <option value="">Seleccione un banco</option>
+                        {% for banco in bancos %}
+                            <option value="{{ banco.id }}">{{ banco.nombre }} - {{ banco.numero_cuenta }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-            <label>Banco y número de cuenta</label>
-                <select name="banco" required>
-                <option value="">-- Selecciona --</option>
-                    {% for banco in bancos %}
-                        <option value="{{ banco.id }}">{{ banco.nombre }} - {{ banco.numero_cuenta }}</option>
-                    {% endfor %}
-                </select>
+                <div class="form-group-modern">
+                    <label for="numeroBoleta">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        Número de Boleta
+                        <span class="required">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        name="numeroBoleta" 
+                        id="numeroBoleta" 
+                        class="form-control-modern"
+                        inputmode="numeric" 
+                        autocomplete="off"
+                        pattern="^\d{4,20}$" 
+                        placeholder="Ej: 123456789"
+                        required
+                    />
+                    <small class="form-hint">Solo dígitos (4 a 12 caracteres)</small>
+                </div>
 
-                <label>Número de Boleta</label>
-                <input type="text" name="numeroBoleta" id="numeroBoleta" inputmode="numeric" autocomplete="off"
-                            pattern="^\d{4,20}$" title="Ingrese sólo dígitos (4 a 10 caracteres)" placeholder="Ingrese sólo dígitos (4 a 10 caracteres)" required>
+                <div class="form-group-modern">
+                    <label for="fechaDeposito">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        Fecha de depósito
+                        <span class="required">*</span>
+                    </label>
+                    <input 
+                        type="date" 
+                        name="fechaDeposito" 
+                        id="fechaDeposito" 
+                        class="form-control-modern"
+                        max="{{ hoy|date:'Y-m-d' }}" 
+                        required
+                    />
+                </div>
 
-                <label for="fechaDeposito">Fecha de depósito</label>
-                <input type="date" name="fechaDeposito" id="fechaDeposito" max="{{ hoy|date:'Y-m-d' }}" required>
+                <div class="form-group-modern">
+                    <label for="monto">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                        Monto
+                        <span class="required">*</span>
+                    </label>
+                    <div class="input-with-icon">
+                        <span class="input-icon">Q.</span>
+                        <input 
+                            type="text" 
+                            name="monto" 
+                            id="monto" 
+                            class="form-control-modern with-icon"
+                            inputmode="decimal" 
+                            autocomplete="off" 
+                            pattern="^\d+([.,]\d{1,2})?$"
+                            placeholder="200.00"
+                            required
+                        />
+                    </div>
+                    <small class="form-hint">Ejemplos: 200, 214.5, 214.50</small>
+                </div>
 
-                <label>Monto</label>
-                <input type="text" name="monto" id="monto" inputmode="decimal" autocomplete="off" pattern="^\d+([.,]\d{1,2})?$"
-                            title="Ejemplos validos: 200, 214.5, 214.50" placeholder="Ejemplos válidos: 200, 214.5, 214.50" required>
+                <div class="form-group-modern">
+                    <label for="tipoPago">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        Tipo de Pago
+                        <span class="required">*</span>
+                    </label>
+                    <select name="tipoPago" id="tipoPago" class="form-control-modern" required>
+                        <option value="">Seleccione tipo de pago</option>
+                        {% for tipo in tipos_pago %}
+                            <option value="{{ tipo.idTipoPago }}">{{ tipo.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-                <label>Tipo de Pago</label>
-                <select name="tipoPago" required>
-                <option value="">-- Selecciona --</option>
-                    {% for tipo in tipos_pago %}
-                        <option value="{{ tipo.idTipoPago }}">    
-                            {{ tipo.nombre }}
-                        </option>
-                    {% endfor %}
-                </select>
-                <div class="btn-form">
-                    <button id="btn-procesar" type="submit" class="btn-procesar">Procesar</button>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn-procesar" id="btn-procesar">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Procesar Boleta
+                    </button>
                 </div>
             </form>
         </div>

@@ -9,7 +9,7 @@
 {% block content %}
 
 <link rel="stylesheet" href="{% static 'administracion/css/boleta_detalle_style.css' %}">
-<script src=" {% static 'administracion/js/boleta_detalle.js' %}"></script>
+<script src=" {% static 'administracion/js/boleta_detalle.js' %}"></script> 
 
 <div class="boleta_detalle_container">
     <div class="info-section">  
@@ -80,25 +80,104 @@
     </div>
 </div>  
 
-    <!--Modal para visor de imagen-->
-    <div id="imagenModal" class="modal hidden">      
-        <div class="modal-content">
-            <span class="close" id="closeModal">&times;</span>
-            <!--Imagen a visualizar -->
-            <div class="image-container">
-                <img id="boletaImage" src="{{ boleta.imagen.url }}" alt="Boleta" />
+   <!-- Modal para visor de imagen mejorado -->
+<div id="imagenModal" class="modal hidden">      
+    <div class="modal-content-viewer">
+        <!-- Header del modal con botón de cerrar -->
+        <div class="modal-header-viewer">
+            <h3>Vista de Boleta</h3>
+            <button class="close-btn" id="closeModal">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Contenedor de imagen con scroll -->
+        <div class="image-viewport" id="imageViewport">
+            <div class="image-container" id="imageContainer">
+                <img id="boletaImage" src="{{ boleta.imagen.url }}" alt="Boleta" draggable="false" />
+            </div>
+        </div>
+
+        <!-- Controles mejorados -->
+        <div class="controls-viewer">
+            <div class="controls-group">
+                <button class="control-btn" id="rotateLeft" title="Rotar izquierda">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 4v6h6M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                    </svg>
+                    <span>Rotar </span>
+                </button>
+                
+                <button class="control-btn" id="rotateRight" title="Rotar derecha">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 4v6h-6M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                    </svg>
+                    <span>Rotar </span>
+                </button>
             </div>
 
-            <!-- Controles -->
-            <div class="controls">
-                <button class="control-btn" id="rotateLeft"> ⟲ Rotar Izquierda </button>
-                <button class="control-btn" id="rotateRight"> ⟳ Rotar Derecha </button>
-                <button class="control-btn" id="zoomIn"> 🔍 Acercar </button>
-                <button class="control-btn" id="zoomOut"> 🔎 Alejar </button>
-                <button class="control-btn" id="resetImage">↺ Restaurar </button>
+            <div class="controls-group">
+                <button class="control-btn" id="zoomOut" title="Alejar (Ctrl + -)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        <line x1="8" y1="11" x2="14" y2="11"></line>
+                    </svg>
+                </button>
+                <button class="control-btn" id="zoomIn" title="Acercar (Ctrl + +)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        <line x1="11" y1="8" x2="11" y2="14"></line>
+                        <line x1="8" y1="11" x2="14" y2="11"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="controls-group">
+                <button class="control-btn" id="fitToScreen" title="Ajustar a pantalla">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <polyline points="9 21 3 21 3 15"></polyline>
+                        <line x1="21" y1="3" x2="14" y2="10"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                    </svg>
+                    <span>Ajustar</span>
+                </button>
+                
+                <button class="control-btn" id="resetImage" title="Restaurar (Ctrl + 0)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                        <path d="M21 3v5h-5"></path>
+                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                        <path d="M3 21v-5h5"></path>
+                    </svg>
+                    <span>Restaurar</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Indicadores -->
+        <div class="viewer-indicators">
+            <div class="indicator" id="dragIndicator">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"></path>
+                </svg>
+                <span>Arrastra para mover</span>
+            </div>
+            <div class="indicator" id="wheelIndicator">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="2" width="6" height="20" rx="3"></rect>
+                    <path d="M12 6v4"></path>
+                </svg>
+                <span>Rueda del mouse para zoom</span>
             </div>
         </div>
     </div>
+</div>
     <!-- modal para bloqueo por duplicacion de procesamiento de pago -->
     {% if boleta.estado_validacion == "procesada" %}
         <div id="modalBlock" class="modal-block hidden">

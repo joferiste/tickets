@@ -5,7 +5,8 @@ from datetime import datetime
 from django.utils.text import slugify
 from django.utils import timezone
 from datetime import datetime
-
+from locales.models import OcupacionLocal
+ 
 class Transaccion(models.Model):
     ESTADOS = [
         ('pendiente', 'Pendiente'),     # Recién creada
@@ -36,6 +37,7 @@ class Transaccion(models.Model):
     dias_retraso = models.IntegerField(default=0) 
     fecha_limite_confirmacion = models.DateTimeField(null=True, blank=True)
     mensaje_final = models.TextField(null=True, blank=True)
+    ocupacion = models.ForeignKey(OcupacionLocal, on_delete=models.PROTECT, null=True)
 
     @property
     def dias_mora_actuales(self):

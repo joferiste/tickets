@@ -807,6 +807,11 @@ def procesar_boleta(request, boleta_id):
             # Creacion del mensaje final
             mensaje_final = generar_mensaje(resultado_pago, boleta_nombre=nueva_boleta.nombre, complemento=nueva_boleta.es_complemetaria)
 
+            ocupacion_activa = OcupacionLocal.objects.filter(
+                negocio=negocio,
+                fecha_fin__isnull=True
+            ).first()
+
             # Crear transacción nueva
             transaccion = Transaccion.objects.create(
                 boleta=nueva_boleta,
@@ -821,7 +826,8 @@ def procesar_boleta(request, boleta_id):
                 dias_retraso=resultado_pago['dias_mora'],
                 fecha_limite_confirmacion=resultado_pago['fecha_lapso_tiempo'],
                 fecha_ingreso_sistema=resultado_pago['fecha_original_conv'],
-                mensaje_final=mensaje_final
+                mensaje_final=mensaje_final,
+                ocupacion=ocupacion_activa,
             )
             
         # Marcar el sandbox como procesado

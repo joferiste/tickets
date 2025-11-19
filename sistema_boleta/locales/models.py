@@ -57,8 +57,7 @@ class Local(models.Model):
         verbose_name = "Local" 
         verbose_name_plural = "Locales"
         ordering = ['-fechaCreacion'] 
-
-
+ 
 
 class OcupacionLocal(models.Model):
     idOcupacion = models.AutoField(primary_key=True)

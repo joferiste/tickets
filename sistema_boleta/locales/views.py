@@ -426,56 +426,60 @@ def perfil_local(request, local_id):
     ).order_by('-fechaModificacion')[:5]
     
     # ========================================
-    # CÁLCULO CORRECTO DE INGRESOS TOTALES
+    # INGRESOS TOTALES - SOLO OCUPACIONES ACTIVAS
     # ========================================
-    ingresos_totales = Decimal('0.00')
-    total_transacciones = 0
-    detalle_ingresos = []  # Para debugging/mostrar detalle si quieres
+    resultado = Transaccion.objects.filter(
+        ocupacion__local=local,
+        
+        estado='exitosa'
+    ).aggregate(
+        total=Sum('monto'),
+        cantidad=Count('idTransaccion')
+    )
+        
+    ingresos_totales = resultado['total'] or Decimal('0.00')
+    total_transacciones = resultado['cantidad'] or 0
 
-    # Recorrer todas las ocupaciones de este local
-    for ocupacion in ocupaciones_pasadas:
-        fecha_inicio = ocupacion.fecha_inicio
-        fecha_fin = ocupacion.fecha_fin or timezone.now().date()
+    # ========================================
+    # DEBUGGING EXTENDIDO
+    # ========================================
+    print(f"\n{'='*50}")
+    print(f"Local: {local.nombre} (ID: {local.idLocal})")
+    print(f"Ingresos: Q{ingresos_totales}")
+    print(f"Transacciones encontradas: {total_transacciones}")
+    
+    # Ver la ocupación activa
+    if ocupacion_actual:
+        print(f"\n--- OCUPACIÓN ACTIVA ---")
+        print(f"ID Ocupación: {ocupacion_actual.idOcupacion}")
+        print(f"Negocio: {ocupacion_actual.negocio.nombre}")
+        print(f"Fecha inicio: {ocupacion_actual.fecha_inicio}")
+        print(f"Fecha fin: {ocupacion_actual.fecha_fin}")
         
-        # Generar lista de periodos válidos (YYYY-MM)
-        periodos_validos = []
-        fecha_actual = fecha_inicio
-        while fecha_actual <= fecha_fin:
-            periodos_validos.append(fecha_actual.strftime('%Y-%m'))
-            # Avanzar al siguiente mes
-            if fecha_actual.month == 12:
-                fecha_actual = fecha_actual.replace(year=fecha_actual.year + 1, month=1)
-            else:
-                fecha_actual = fecha_actual.replace(month=fecha_actual.month + 1)
+        # Ver TODAS las transacciones de este negocio
+        todas_trans = Transaccion.objects.filter(negocio=ocupacion_actual.negocio)
+        print(f"\n--- TRANSACCIONES DEL NEGOCIO ---")
+        print(f"Total transacciones: {todas_trans.count()}")
         
-        # Obtener transacciones exitosas del negocio en ese periodo
-        transacciones_periodo = Transaccion.objects.filter(
-            negocio=ocupacion.negocio,
-            estado='exitosa',
-            periodo_pagado__in=periodos_validos
-        )
-        
-        # CORRECCIÓN: Sumar el MONTO REAL de cada transacción
-        # (esto incluye mora, ajustes, etc.)
-        resultado = transacciones_periodo.aggregate(
-            total=Sum('monto'),
-            cantidad=Count('idTransaccion')
-        )
-        
-        monto_ocupacion = resultado['total'] or Decimal('0.00')
-        cantidad_transacciones = resultado['cantidad'] or 0
-        
-        ingresos_totales += monto_ocupacion
-        total_transacciones += cantidad_transacciones
-        
-        # Opcional: Guardar detalle para debugging
-        if monto_ocupacion > 0:
-            detalle_ingresos.append({
-                'negocio': ocupacion.negocio.nombre,
-                'periodo': f"{fecha_inicio} - {fecha_fin or 'Actual'}",
-                'monto': monto_ocupacion,
-                'transacciones': cantidad_transacciones
-            })
+        for t in todas_trans:
+            print(f"\nTransacción ID: {t.idTransaccion}")
+            print(f"  Estado: {t.estado}")
+            print(f"  Monto: Q{t.monto}")
+            print(f"  Ocupación ID: {t.ocupacion.idOcupacion if t.ocupacion else 'NULL'}")
+            print(f"  Ocupación Local: {t.ocupacion.local.nombre if t.ocupacion else 'N/A'}")
+            print(f"  Ocupación fecha_fin: {t.ocupacion.fecha_fin if t.ocupacion else 'N/A'}")
+            
+            # Probar cada condición del filtro
+            cond1 = t.ocupacion and t.ocupacion.local == local
+            cond2 = t.ocupacion and t.ocupacion.fecha_fin is None
+            cond3 = t.estado == 'exitosa'
+            
+            print(f"  ¿Cumple ocupacion__local={local.nombre}? {cond1}")
+            print(f"  ¿Cumple ocupacion__fecha_fin__isnull=True? {cond2}")
+            print(f"  ¿Cumple estado='exitosa'? {cond3}")
+            print(f"  ¿DEBE CONTARSE? {cond1 and cond2 and cond3}")
+    
+    print(f"{'='*50}\n")
 
     context = {
         'local': local,
@@ -483,8 +487,7 @@ def perfil_local(request, local_id):
         'ocupaciones_pasadas': ocupaciones_pasadas,
         'ultimos_movimientos': ultimos_movimientos,
         'ingresos_totales': f"{ingresos_totales:.2f}", 
-        'total_transacciones': total_transacciones,
-        'detalle_ingresos': detalle_ingresos,  
+        'total_transacciones': total_transacciones, 
     }
     
     return render(request, 'locales/profile.html', context)

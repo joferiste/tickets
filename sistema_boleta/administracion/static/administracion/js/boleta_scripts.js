@@ -1,19 +1,49 @@
+// ========================================
+// MODAL DE BOLETA - JAVASCRIPT COMPLETO
+// ========================================
+
+// Variables globales del visor
 let currentRotation = 0;
 let currentScale = 1;
+let isDragging = false;
+let startX = 0;
+let startY = 0;
+let translateX = 0;
+let translateY = 0;
+let initialTranslateX = 0;
+let initialTranslateY = 0;
+
+// Configuración
+const ZOOM_STEP = 0.2;
+const MIN_SCALE = 0.3;
+const MAX_SCALE = 5;
+const WHEEL_ZOOM_STEP = 0.1;
+
+// ========================================
+// FUNCIONES PRINCIPALES DEL MODAL
+// ========================================
 
 function openModal() {
-    document.getElementById("boletaModal").classList.remove("hidden");
+    const modal = document.getElementById("boletaModal");
+    modal.classList.remove("hidden");
     resetImage();
+    initImageViewer();
 }
 
 function closeModal() {
-    document.getElementById("boletaModal").classList.add("hidden");
+    const modal = document.getElementById("boletaModal");
+    modal.classList.add("hidden");
+    removeImageViewerListeners();
 }
+
+// ========================================
+// FUNCIONES DE TRANSFORMACIÓN
+// ========================================
 
 function rotateLeft() {
     currentRotation -= 90;
     updateTransform();
-} 
+}
 
 function rotateRight() {
     currentRotation += 90;
@@ -21,26 +51,271 @@ function rotateRight() {
 }
 
 function zoomIn() {
-    currentScale += 0.2;
+    currentScale = Math.min(MAX_SCALE, currentScale + ZOOM_STEP);
     updateTransform();
+    updateZoomDisplay();
 }
 
 function zoomOut() {
-    currentScale = Math.max(0.2, currentScale - 0.2);
+    currentScale = Math.max(MIN_SCALE, currentScale - ZOOM_STEP);
     updateTransform();
+    updateZoomDisplay();
 }
 
 function resetImage() {
     currentRotation = 0;
     currentScale = 1;
+    translateX = 0;
+    translateY = 0;
+    initialTranslateX = 0;
+    initialTranslateY = 0;
     updateTransform();
+    updateZoomDisplay();
+}
+
+function fitToScreen() {
+    const viewport = document.getElementById("imageViewportForm");
+    const img = document.getElementById("modalImage");
+    
+    if (!viewport || !img) return;
+    
+    const viewportRect = viewport.getBoundingClientRect();
+    const imgRect = img.getBoundingClientRect();
+    
+    // Calcular escala para ajustar
+    const scaleX = viewportRect.width / (imgRect.width / currentScale);
+    const scaleY = viewportRect.height / (imgRect.height / currentScale);
+    const newScale = Math.min(scaleX, scaleY) * 0.9; // 90% para margen
+    
+    currentScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+    translateX = 0;
+    translateY = 0;
+    
+    updateTransform();
+    updateZoomDisplay();
 }
 
 function updateTransform() {
     const img = document.getElementById("modalImage");
     if (img) {
-        img.style.transform = `rotate(${currentRotation}deg) scale(${currentScale})`;
+        img.style.transform = `
+            translate(${translateX}px, ${translateY}px) 
+            rotate(${currentRotation}deg) 
+            scale(${currentScale})
+        `;
     }
+}
+
+function updateZoomDisplay() {
+    const zoomDisplay = document.getElementById("zoomLevelForm");
+    if (zoomDisplay) {
+        zoomDisplay.textContent = `${Math.round(currentScale * 100)}%`;
+    }
+}
+
+// ========================================
+// FUNCIONES DE ARRASTRE
+// ========================================
+
+function handleMouseDown(e) {
+    if (e.target.id !== "modalImage") return;
+    
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    initialTranslateX = translateX;
+    initialTranslateY = translateY;
+    
+    const viewport = document.getElementById("imageViewportForm");
+    if (viewport) {
+        viewport.style.cursor = "grabbing";
+    }
+    
+    e.preventDefault();
+}
+
+function handleMouseMove(e) {
+    if (!isDragging) return;
+    
+    const deltaX = e.clientX - startX;
+    const deltaY = e.clientY - startY;
+    
+    translateX = initialTranslateX + deltaX;
+    translateY = initialTranslateY + deltaY;
+    
+    updateTransform();
+}
+
+function handleMouseUp() {
+    if (isDragging) {
+        isDragging = false;
+        const viewport = document.getElementById("imageViewportForm");
+        if (viewport) {
+            viewport.style.cursor = "grab";
+        }
+    }
+}
+
+function handleMouseLeave() {
+    if (isDragging) {
+        handleMouseUp();
+    }
+}
+
+// ========================================
+// FUNCIÓN DE ZOOM CON RUEDA DEL MOUSE
+// ========================================
+
+function handleWheel(e) {
+    e.preventDefault();
+    
+    const delta = e.deltaY > 0 ? -WHEEL_ZOOM_STEP : WHEEL_ZOOM_STEP;
+    const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, currentScale + delta));
+    
+    if (newScale === currentScale) return;
+    
+    // Obtener posición del mouse relativa al viewport
+    const viewport = document.getElementById("imageViewportForm");
+    const rect = viewport.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    
+    // Calcular el centro del viewport
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    // Ajustar la traducción para hacer zoom hacia el mouse
+    const scaleFactor = newScale / currentScale;
+    translateX = mouseX - (mouseX - translateX) * scaleFactor - (mouseX - centerX) * (scaleFactor - 1);
+    translateY = mouseY - (mouseY - translateY) * scaleFactor - (mouseY - centerY) * (scaleFactor - 1);
+    
+    currentScale = newScale;
+    updateTransform();
+    updateZoomDisplay();
+}
+
+// ========================================
+// INICIALIZACIÓN Y LIMPIEZA DE EVENTOS
+// ========================================
+
+function initImageViewer() {
+    const viewport = document.getElementById("imageViewportForm");
+    
+    if (viewport) {
+        // Eventos de mouse para arrastre
+        viewport.addEventListener("mousedown", handleMouseDown);
+        viewport.addEventListener("mousemove", handleMouseMove);
+        viewport.addEventListener("mouseup", handleMouseUp);
+        viewport.addEventListener("mouseleave", handleMouseLeave);
+        
+        // Evento de rueda para zoom
+        viewport.addEventListener("wheel", handleWheel, { passive: false });
+    }
+    
+    updateZoomDisplay();
+}
+
+function removeImageViewerListeners() {
+    const viewport = document.getElementById("imageViewportForm");
+    
+    if (viewport) {
+        viewport.removeEventListener("mousedown", handleMouseDown);
+        viewport.removeEventListener("mousemove", handleMouseMove);
+        viewport.removeEventListener("mouseup", handleMouseUp);
+        viewport.removeEventListener("mouseleave", handleMouseLeave);
+        viewport.removeEventListener("wheel", handleWheel);
+    }
+}
+
+// ========================================
+// ATAJOS DE TECLADO
+// ========================================
+
+document.addEventListener("keydown", function(e) {
+    const modal = document.getElementById("boletaModal");
+    if (modal && !modal.classList.contains("hidden")) {
+        switch(e.key) {
+            case "Escape":
+                closeModal();
+                break;
+            case "+":
+            case "=":
+                e.preventDefault();
+                zoomIn();
+                break;
+            case "-":
+            case "_":
+                e.preventDefault();
+                zoomOut();
+                break;
+            case "f":
+            case "F":
+                e.preventDefault();
+                fitToScreen();
+                break;
+        }
+    }
+});
+
+// ========================================
+// VALIDACIÓN DEL FORMULARIO
+// ========================================
+
+// Validación en tiempo real del número de boleta
+const numeroBoleta = document.getElementById("numeroBoleta");
+if (numeroBoleta) {
+    numeroBoleta.addEventListener("input", function(e) {
+        this.value = this.value.replace(/[^\d]/g, "");
+    });
+}
+
+// Validación en tiempo real del monto
+const montoInput = document.getElementById("monto");
+if (montoInput) {
+    montoInput.addEventListener("input", function(e) {
+        let value = this.value.replace(/[^\d.,]/g, "");
+        value = value.replace(/,/g, ".");
+        
+        const parts = value.split(".");
+        if (parts.length > 2) {
+            value = parts[0] + "." + parts.slice(1).join("");
+        }
+        
+        if (parts[1] && parts[1].length > 2) {
+            value = parts[0] + "." + parts[1].substring(0, 2);
+        }
+        
+        this.value = value;
+    });
+}
+
+// Prevenir envío duplicado del formulario
+const form = document.getElementById("procesarBoletaForm");
+if (form) {
+    form.addEventListener("submit", function(e) {
+        const submitBtn = document.getElementById("btn-procesar");
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 6v6l4 2"></path>
+                </svg>
+                Procesando...
+            `;
+            
+            // Reactivar después de 3 segundos por si hay error
+            setTimeout(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Procesar Boleta
+                `;
+            }, 3000);
+        }
+    });
 }
 
 // Funcion para esperar a que el elemento este disponible
@@ -268,7 +543,7 @@ function showResultadoModal(tipo, mensaje, transaccionId) {
         });
     } else {
         console.warn('No se encontró botón "Cerrar / Salir".');
-    }
+    } 
 
     // Mostrar el modal de resultado
     const resultadoModal = document.getElementById('resultadoModal');
