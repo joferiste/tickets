@@ -11,8 +11,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-from django.conf import settings
-from django.conf.urls.static import static
 from decouple import config
 import os
 import logging
@@ -20,6 +18,16 @@ import logging
 # ================================
 # CONFIGURACIÓN DE LOGIN SEGURO
 # ================================
+
+logger = logging.getLogger("email_security")
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = config('DEBUG', default=False, cast=bool)
+
 
 LOGGING = {
     'version': 1,
@@ -34,7 +42,7 @@ LOGGING = {
         'email_file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': 'logs/email_security.log',
+            'filename': os.path.join(BASE_DIR, 'logs', 'email_security.log'),
             'maxBytes': 5 * 1024 * 1024,  # 5MB
             'backupCount': 5,
             'formatter': 'verbose',
@@ -67,11 +75,11 @@ EMAIL_USERNAME = config("EMAIL_USERNAME")
 EMAIL_PASSWORD = config("EMAIL_PASSWORD")
 
 # Importante: No imprimir credenciales en produccion
-if not config("DEBUG", default=False, cast=bool):
-    print("Configuración IMAP cargada")
+if not DEBUG:
+    logger.info("Configuración IMAP cargada")
 else:
     # Solo en desarrollo mostrar servidor 
-    print(f"[DEV] Servidor IMAP: {IMAP_SERVER}:{IMAP_PORT}")
+    logger.info(f"[DEV] Servidor IMAP: {IMAP_SERVER}:{IMAP_PORT}")
 
 
 # =============================================================
@@ -85,125 +93,27 @@ EMAIL_USE_SSL = config("SMTP_USE_SSL", cast=bool, default=True)
 EMAIL_USE_TLS = config("SMTP_USE_TLS", cast=bool, default=False)
 EMAIL_HOST_USER = config("EMAIL_USERNAME")
 EMAIL_HOST_PASSWORD = config("EMAIL_PASSWORD") 
-DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="EMAIL_HOST_USER")
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER)
 
 # Timeout para conexiones SMTP
 EMAIL_TIMEOUT = 30
 
-if not config("DEBUG", default=False, cast=bool):
-    print("Configuración SMTP cargada")
+if not DEBUG:
+    logger.info("Configuración SMTP cargada")
 else:
-    print(f"[DEV] Servidor SMTP: {EMAIL_HOST}:{EMAIL_PORT}")
-
-
-# ===============================================================
-# CONFIGURACIÓN DE SEGURIDAD DE EMAIL
-# ===============================================================
-
-# Límite de intentos de conexión (protección contra fuerza bruta)
-EMAIL_MAX_ATTEMPTS = 5
-
-# Tamaño máximo de archivos adjuntos (5MB)
-MAX_EMAIL_ATTACHMENT_SIZE = 5 * 1024 * 1024
-
-# Límite de correos a procesar por ejecución
-MAX_EMAILS_PER_RUN = 50
-
-
-# ================================================================
-# VALIDACIÓN DE CONFIGURACIÓN
-# ================================================================
-
-def validar_configuracion_email():
-    """
-    Valida que la configuracion de email sea correcta y segura.
-    Se ejecuta al iniciar la aplicación.
-    """
-
-    errores = []
-    advertencias = []
-
-    # Verificar que SSL esté habilitado
-    if not IMAP_USE_SSL:
-        advertencias.append("IMAP SSL esté deshabilitado - conexión insegura.")
-
-    if not EMAIL_USE_SSL and not EMAIL_USE_TLS:
-        advertencias.append(" SMTP sin SSL/TLS - conexión insegura.")
-
-    # Verificar credenciales
-    if not EMAIL_USERNAME or not EMAIL_PASSWORD:
-        errores.append("Credenciales de email no configuradas.")
-
-    # Verificar App password 
-    if 'gmail.com' in IMAP_SERVER.lower():
-        if len(EMAIL_PASSWORD) < 16:
-            advertencias.append(
-                "La contrasena parece ser real, no APP password. "
-                "Se recomienda usar App password de gmail para mayor seguridad."
-            )
-
-    # Verificar puertos seguros
-    if IMAP_PORT not in [993, 143]:
-        advertencias.append(f"Puerto IMAP inusual: {IMAP_PORT}")
-
-    if EMAIL_PORT not in [465, 587]:
-        advertencias.append(f"Puerto SMTP inusual: {EMAIL_PORT}")
-
-    # Mostrar resultados
-    if errores:
-        for error in errores:
-            print(error)
-        raise Exception("Configuración de Email invalida")
-    
-    if advertencias and config("DEBUG", default=False, cast=bool):
-        for advertencia in advertencias:
-            print(advertencia)
-
-    print("Configuracion de email validada")
-
-
-# Ejecutar validacion al importar settings
-try:
-    validar_configuracion_email()
-except Exception as e:
-    if not config("DEBUG", default=False, cast=bool):
-        # En produccion, logear pero no detener la aplicacion
-        logging.error(f"Error de configuración de email: {e}")
-    else:
-        # En desarrollo, mostrar el error
-        raise
+    logger.info(f"[DEV] Servidor SMTP: {EMAIL_HOST}:{EMAIL_PORT}")
 
 
 # ============================================================    
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-
-# URL Patterns
-urlpatterns = [
-
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-!ee^b*&l(_@^fg34j7i##+654)hjxxm18e$a%$962v%r7bny6r'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+SECRET_KEY = config('SECRET_KEY')
 
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -213,7 +123,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'usuarios',
     'negocios',
-    'boletas',
+    'boletas.apps.BoletasConfig',
     'transacciones',
     'recibos',
     'historiales',
@@ -227,6 +137,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -260,14 +171,37 @@ WSGI_APPLICATION = 'sistema_boleta.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "tickets",
-        "USER": "postgres",
-        "PASSWORD": config("BD_PASSWORD"),
-        "HOST": "127.0.0.1",
-        "PORT": "5432",
-    }
+        "NAME": config('POSTGRES_DB', default='tickets'),
+        "USER": config('POSTGRES_USER', default='postgres'),
+        "PASSWORD": config("POSTGRES_PASSWORD"),
+        "HOST": config('POSTGRES_HOST', default='127.0.0.1'),
+        "PORT": config('POSTGRES_PORT', default='5432'),
+    } 
 }
 
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+
+IS_DOCKER = config('DJANGO_DOCKER', default=False, cast=bool)
+
+STATIC_URL = '/static/'
+
+if IS_DOCKER:
+    STATIC_ROOT = '/app/staticfiles'
+    MEDIA_ROOT = '/app/media'
+else:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+MEDIA_URL = '/media/'
+
+if IS_DOCKER:
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger(__name__)
+    logger.info(f"🐳 DJANGO_DOCKER={IS_DOCKER}")
+    logger.info(f"📁 MEDIA_ROOT={MEDIA_ROOT}")
+    logger.info(f"📂 STATIC_ROOT={STATIC_ROOT}")
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -307,11 +241,9 @@ DATE_FORMAT = 'd/m/Y'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
 
 STATICFILES_DIRS = [
     #BASE_DIR / "static",
-    #'/var/www/static/',
 ]
 
 # Default primary key field type

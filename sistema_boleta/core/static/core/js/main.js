@@ -241,3 +241,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
+// Solución automática para todos los modales
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Detectar cuando se abre cualquier modal
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.attributeName === 'class') {
+                const modal = mutation.target;
+                
+                if (modal.classList.contains('modal')) {
+                    if (!modal.classList.contains('hidden')) {
+                        // Modal abierto
+                        setupModalBackButton(modal);
+                    }
+                }
+            }
+        });
+    });
+    
+    // Observar todos los modales
+    document.querySelectorAll('.modal').forEach(modal => {
+        observer.observe(modal, { attributes: true });
+    });
+    
+    function setupModalBackButton(modal) {
+        // Guardar el scroll actual
+        const scrollPos = window.scrollY;
+        
+        // Listener para el botón atrás
+        const backHandler = function(e) {
+            if (!modal.classList.contains('hidden')) {
+                e.preventDefault();
+                modal.classList.add('hidden');
+                window.scrollTo(0, scrollPos);
+                window.removeEventListener('popstate', backHandler);
+                history.pushState(null, '', window.location.href);
+            }
+        };
+        
+        window.addEventListener('popstate', backHandler);
+        
+        // Agregar un estado al historial (sin cambiar la URL)
+        history.pushState(null, '', window.location.href);
+    }
+});

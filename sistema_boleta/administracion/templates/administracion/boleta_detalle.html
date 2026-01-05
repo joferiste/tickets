@@ -27,23 +27,7 @@
         <div class="acciones">
             <a href="{% url 'administracion:boletas_sandbox' %}" class="btn btn-secondary"> Regresar</a>
             <a href="{% url 'administracion:boleta_revisar' boleta.id %}" class="btn btn-primary">Confirmar</a>
-            {% if boleta.id %}
-                {% if boleta.es_valida %}
-                    <button class="btn btn-outline-danger" 
-                            onclick="confirmarEliminacion(this)" 
-                            data-url="{% url 'administracion:eliminar_sandbox' boleta.id %}"
-                            data-mensaje="Esta boleta es válida, ¿Estás seguro de querer eliminarla?">
-                        Eliminar
-                    </button>
-                {% else %}
-                    <button class="btn btn-danger" 
-                            onclick="confirmarEliminacion(this)" 
-                            data-url="{% url 'administracion:eliminar_sandbox' boleta.id %}"
-                            data-mensaje="Eliminarás una boleta inválida">
-                        Eliminar
-                    </button>
-                {% endif %}
-            {% endif %}
+            
         </div>
     </div>  
 

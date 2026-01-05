@@ -10,6 +10,7 @@ from django.core.files.base import ContentFile
 from boletas.models import BoletaSandbox
 from .email_client import connect_imap, EmailConnectionError, EmailSecurityError
 from boletas.services.validation.validation import validar_boleta_sandbox
+from decouple import config
 
 logger = logging.getLogger('email_security')
 
@@ -220,3 +221,78 @@ def procesar_correos(limite=50):
         return 0
     
     return count
+
+
+# ===============================================================
+# CONFIGURACIÓN DE SEGURIDAD DE EMAIL
+# ===============================================================
+
+# Límite de intentos de conexión (protección contra fuerza bruta)
+EMAIL_MAX_ATTEMPTS = 5
+
+# Tamaño máximo de archivos adjuntos (5MB)
+MAX_EMAIL_ATTACHMENT_SIZE = 5 * 1024 * 1024
+
+# Límite de correos a procesar por ejecución
+MAX_EMAILS_PER_RUN = 50
+
+
+# ================================================================
+# VALIDACIÓN DE CONFIGURACIÓN
+# ================================================================
+
+def validar_configuracion_email():
+    """
+    Valida que la configuracion de email sea correcta y segura.
+    Se ejecuta al iniciar la aplicación.
+    """
+
+    IMAP_USE_SSL = True
+    EMAIL_USE_SSL = config("SMTP_USE_SSL", cast=bool, default=True)
+    EMAIL_USE_TLS = config("SMTP_USE_TLS", cast=bool, default=False)
+    EMAIL_USERNAME = config("EMAIL_USERNAME")
+    EMAIL_PASSWORD = config("EMAIL_PASSWORD")
+    IMAP_SERVER = config("IMAP_SERVER", default="imap.gmail.com")
+    IMAP_PORT = config("EMAIL_PORT", cast=int, default=993)
+    EMAIL_PORT = config("SMTP_PORT", cast=int, default=465)
+
+    errores = []
+    advertencias = []
+
+    # Verificar que SSL esté habilitado
+    if not IMAP_USE_SSL:
+        advertencias.append("IMAP SSL esté deshabilitado - conexión insegura.")
+
+    if not EMAIL_USE_SSL and not EMAIL_USE_TLS:
+        advertencias.append(" SMTP sin SSL/TLS - conexión insegura.")
+
+    # Verificar credenciales
+    if not EMAIL_USERNAME or not EMAIL_PASSWORD:
+        errores.append("Credenciales de email no configuradas.")
+
+    # Verificar App password 
+    if 'gmail.com' in IMAP_SERVER.lower():
+        if len(EMAIL_PASSWORD) < 16:
+            advertencias.append(
+                "La contrasena parece ser real, no APP password. "
+                "Se recomienda usar App password de gmail para mayor seguridad."
+            )
+
+    # Verificar puertos seguros
+    if IMAP_PORT not in [993, 143]:
+        advertencias.append(f"Puerto IMAP inusual: {IMAP_PORT}")
+
+    if EMAIL_PORT not in [465, 587]:
+        advertencias.append(f"Puerto SMTP inusual: {EMAIL_PORT}")
+
+    # Mostrar resultados
+    if errores:
+        for error in errores:
+            print(error)
+        raise Exception("Configuración de Email invalida")
+    
+    if advertencias:
+        for advertencia in advertencias:
+            print(advertencia)
+
+    logger.info("Configuracion de email validada")

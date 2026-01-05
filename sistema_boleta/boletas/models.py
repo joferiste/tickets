@@ -78,7 +78,7 @@ class Boleta(models.Model):
     metadata = models.JSONField(blank=True, null=True)
     fechaIngreso = models.DateTimeField(auto_now_add=True)
     imagen = models.ImageField(upload_to='boletas/') 
-    mensajeCorreo = models.TextField()
+    mensajeCorreo = models.TextField() 
     monto = models.CharField(max_length=10)
     numeroBoleta = models.CharField(max_length=20)
     banco = models.ForeignKey(Banco, on_delete=models.PROTECT)
