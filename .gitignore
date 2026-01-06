@@ -6,32 +6,73 @@ ENV/
 env.bak/
 venv.bak/
 
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+/staticfiles/
+/media/
+*.pot
+
 
 # Archivos de configuración del entorno
 .env
+.env.local
+.env.*.local
 *.env
 *.env.*
 
-
-# Archivos de entorno
-.env
-*.env 
-*.env.*
+# Permitir el archivo de ejemplo
+!.env.example
 
 
 # Archivos de Python
 __pycache__/
 *.py[cod]
-
-
-# Archivos de base de datos
-*.sqlite3
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+pip-log.txt
 
 
 # Archivos del sistema
 .DS_Store
+Thumbs.db
+desktop.ini
+
+#Logs
 *.log
+logs/
 
 
 # VSCode
 .vscode/
+
+# Documentación
+*.md
+
+# Carpeta que no debe de compartirse
+media/
+
+# Carpeta creada a partir de dockerizar el proyecto
+staticfiles/
+
+# Backups
+backups/
+*.sql
+*.sql.gz
+
+# Configuración específica del usuario
+config.json
+
+# Docker
+docker-compose.override.yml
+
+# Archivos temporales
+*.tmp
+*.bak
+*.orig
